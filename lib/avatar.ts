@@ -32,6 +32,11 @@ function pickByNickname(authorName?: string | null): AvatarAsset {
   return { type: 'icon' }
 }
 
+export function getRandomAvatarUrl(): string {
+  const idx = Math.floor(Math.random() * AVATAR_PRESETS.length)
+  return AVATAR_PRESETS[idx].url
+}
+
 export function getAvatarAsset(
   authorName?: string | null,
   customUrl?: string | null,

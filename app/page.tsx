@@ -16,6 +16,8 @@ import TrashTab from '@/components/tabs/TrashTab'
 import CreditModal from '@/components/ui/CreditModal'
 import WelcomeBonusModal from '@/components/ui/WelcomeBonusModal'
 import GlobalDreamModal from '@/components/dream/GlobalDreamModal'
+import { getRandomNickname, DEFAULT_NICKNAME } from '@/lib/nicknames'
+import { getRandomAvatarUrl } from '@/lib/avatar'
 import Onboarding from '@/components/onboarding/Onboarding'
 import AuthScreen from '@/components/onboarding/AuthScreen'
 import { AnimatePresence, motion } from 'framer-motion'
@@ -35,7 +37,7 @@ const BG_DARK = 'linear-gradient(180deg, #010204 0%, #020608 40%, #040C18 100%)'
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab } = useDreamStore()
+  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl } = useDreamStore()
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false)
@@ -51,7 +53,11 @@ export default function Home() {
     const key = `dreamy_welcome_bonus_${session.user.email}`
     if (!localStorage.getItem(key)) {
       setShowWelcomeBonus(true)
+      // 신규 유저에게만 랜덤 닉네임·아바타 부여 (기존 유저의 직접 수정본은 유지)
+      if (nickname === DEFAULT_NICKNAME) setNickname(getRandomNickname())
+      if (!avatarUrl) setAvatarUrl(getRandomAvatarUrl())
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.email])
 
   const handleCloseWelcomeBonus = () => {
