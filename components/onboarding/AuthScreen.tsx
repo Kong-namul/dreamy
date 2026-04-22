@@ -21,10 +21,8 @@ export default function AuthScreen() {
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
-    await signIn('mock-google', { redirect: false })
     setActiveTab('new')  // 로그인 시 항상 오늘의 꿈 탭으로 초기화
-    await update()
-    setLoading(false)
+    await signIn('google', { callbackUrl: '/' })
   }
 
   return (
