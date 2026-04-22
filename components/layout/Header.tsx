@@ -202,10 +202,15 @@ export default function Header({ session }: { session: Session }) {
             borderBottom: '1px solid rgba(255,255,255,0.06)',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button
+            type="button"
+            onClick={() => setActiveTab('new')}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+            aria-label="Dreamy 홈으로"
+          >
             <DreamyLogo size={42} style={{ color: '#C4C0F5' }} />
             <span style={{ fontSize: 20, fontWeight: 800, color: '#E8E8F4', fontFamily: "'Nunito', sans-serif", letterSpacing: -0.3 }}>Dreamy</span>
-          </div>
+          </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <button
               onClick={() => setCreditModalOpen(true)}
@@ -248,10 +253,16 @@ export default function Header({ session }: { session: Session }) {
           }}
         >
           <div className="h-16 flex items-center justify-between gap-8" style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-            <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab('new')}
+              className="flex items-center gap-1.5 shrink-0"
+              style={{ background: 'transparent', border: 'none', padding: 0, cursor: 'pointer' }}
+              aria-label="Dreamy 홈으로"
+            >
               <DreamyLogo size={36} style={{ color: '#C4C0F5' }} />
               <span className="text-xl font-bold tracking-tight" style={{ color: '#E8E8F4', fontFamily: "'Nunito', sans-serif", fontWeight: 800 }}>Dreamy</span>
-            </div>
+            </button>
 
             <nav style={{ display: 'flex', height: 64, alignItems: 'center', gap: 32 }}>
               {TABS.map((tab) => {

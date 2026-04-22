@@ -140,7 +140,7 @@ function DreamCard({ entry, index, onClick, onToggleShared, onDelete }: {
 }
 
 export default function MyDiaryTab() {
-  const { dreams, nickname, setShared, softDeleteDream } = useDreamStore()
+  const { dreams, nickname, setShared, softDeleteDream, setActiveTab } = useDreamStore()
   const [selected, setSelected] = useState<DetailEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
@@ -170,8 +170,31 @@ export default function MyDiaryTab() {
         >
           <BookIcon size={28} style={{ color: '#555E80' }} />
         </div>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#8890B0' }}>아직 저장된 꿈이 없어요</p>
-        <p style={{ fontSize: 12, color: '#3C4260' }}>꿈을 해석하면 자동으로 여기에 저장돼요</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#C0C4DC' }}>아직 저장된 꿈이 없어요</p>
+        <p style={{ fontSize: 13, color: '#6B739A', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
+          오늘 꾼 꿈을 해석해보세요.<br />해석하면 이곳에 자동으로 저장돼요.
+        </p>
+        <button
+          type="button"
+          onClick={() => setActiveTab('new')}
+          style={{
+            marginTop: 12,
+            padding: '12px 22px',
+            borderRadius: 999,
+            fontSize: 14,
+            fontWeight: 700,
+            background: 'linear-gradient(135deg, #7F77DD, #C44B72)',
+            color: 'white',
+            border: 'none',
+            cursor: 'pointer',
+            boxShadow: '0 8px 24px rgba(127,119,221,0.35)',
+            transition: 'filter 0.15s, transform 0.1s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.08)')}
+          onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
+        >
+          꿈 해석하러 가기
+        </button>
       </div>
     )
   }

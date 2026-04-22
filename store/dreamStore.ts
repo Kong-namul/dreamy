@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { DreamEntry, DreamComment, TabId, CreditTransaction } from '@/types'
-import { SAMPLE_DREAMS } from '@/lib/sampleDreams'
 import { inferAuspiceFromMoods } from '@/lib/auspice'
 
 interface DreamStore {
@@ -34,13 +33,13 @@ interface DreamStore {
   permanentlyDeleteDream: (id: string) => void  // 휴지통 영구 삭제
 }
 
-const INITIAL_HISTORY: CreditTransaction[] = [
-  { id: 'h-1', type: 'bonus',    amount:  50, label: '가입 축하 보너스',                   date: '2026-04-14T09:00:00.000Z' },
-  { id: 'h-2', type: 'spend',    amount:  -5, label: '기본 해석 · 별빛 호수',              date: '2026-04-15T23:55:00.000Z' },
-  { id: 'h-3', type: 'purchase', amount: 100, label: '기본 팩 구매',         priceWon: 1000, date: '2026-04-17T20:10:00.000Z' },
-  { id: 'h-4', type: 'spend',    amount: -15, label: '그림일기 · 끝없는 복도',             date: '2026-04-18T04:25:00.000Z' },
-  { id: 'h-5', type: 'spend',    amount:  -5, label: '기본 해석 · 앞니 빠지는 꿈',         date: '2026-04-16T05:42:00.000Z' },
-]
+const welcomeBonusTx = (): CreditTransaction => ({
+  id: `welcome-${Date.now()}`,
+  type: 'bonus',
+  amount: 50,
+  label: '가입 축하 보너스',
+  date: new Date().toISOString(),
+})
 
 export const useDreamStore = create<DreamStore>()(
   persist(
@@ -167,25 +166,24 @@ export const useDreamStore = create<DreamStore>()(
     }),
     {
       name: 'dreamy-store',
-      version: 3, // 3 = 이미지 URL 에 v 파라미터 추가 → 시드 재생성 필요
+      version: 4, // 4 = 실서비스 전환: seed 꿈·더미 히스토리 제거, 가입 보너스만 제공
       migrate: (persisted: unknown, version: number) => {
         const state = (persisted ?? {}) as Partial<DreamStore>
-        if (version < 3) {
-          // 이미지 URL 포맷 바뀜 — seed dreams 재시드
+        if (version < 4) {
+          // 실서비스 전환: 이전 seed 더미 데이터 전면 초기화
           return {
             ...state,
-            dreams: SAMPLE_DREAMS,
-            creditHistory: INITIAL_HISTORY,
+            dreams: [],
+            creditHistory: [welcomeBonusTx()],
+            credits: 50,
           } as unknown as DreamStore
         }
         return state as DreamStore
       },
       onRehydrateStorage: () => (state) => {
-        if (state && state.dreams.length === 0) {
-          state.dreams = SAMPLE_DREAMS
-        }
+        // 신규 유저(persist 없는 상태) → 가입 축하 보너스 1건만 기본 제공
         if (state && (state.creditHistory?.length ?? 0) === 0) {
-          state.creditHistory = INITIAL_HISTORY
+          state.creditHistory = [welcomeBonusTx()]
         }
       },
     }

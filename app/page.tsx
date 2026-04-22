@@ -14,6 +14,7 @@ import CreditHistoryTab from '@/components/tabs/CreditHistoryTab'
 import SettingsTab from '@/components/tabs/SettingsTab'
 import TrashTab from '@/components/tabs/TrashTab'
 import CreditModal from '@/components/ui/CreditModal'
+import WelcomeBonusModal from '@/components/ui/WelcomeBonusModal'
 import GlobalDreamModal from '@/components/dream/GlobalDreamModal'
 import Onboarding from '@/components/onboarding/Onboarding'
 import AuthScreen from '@/components/onboarding/AuthScreen'
@@ -37,12 +38,28 @@ export default function Home() {
   const { activeTab } = useDreamStore()
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [showAuth, setShowAuth] = useState(false)
+  const [showWelcomeBonus, setShowWelcomeBonus] = useState(false)
 
   useEffect(() => {
     if (status === 'loading') return
     const seen = localStorage.getItem('dreamy_onboarded')
     setOnboarded(!!seen)
   }, [status])
+
+  useEffect(() => {
+    if (!session?.user?.email) return
+    const key = `dreamy_welcome_bonus_${session.user.email}`
+    if (!localStorage.getItem(key)) {
+      setShowWelcomeBonus(true)
+    }
+  }, [session?.user?.email])
+
+  const handleCloseWelcomeBonus = () => {
+    if (session?.user?.email) {
+      localStorage.setItem(`dreamy_welcome_bonus_${session.user.email}`, '1')
+    }
+    setShowWelcomeBonus(false)
+  }
 
   const handleGoToAuth = () => {
     localStorage.setItem('dreamy_onboarded', '1')
@@ -95,6 +112,7 @@ export default function Home() {
 
       {session && <CreditModal />}
       {session && <GlobalDreamModal />}
+      {session && <WelcomeBonusModal open={showWelcomeBonus} onClose={handleCloseWelcomeBonus} />}
     </div>
   )
 }

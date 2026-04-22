@@ -4,16 +4,18 @@ import { buildPollinationsUrl } from '@/lib/pollinations'
 const seed = (i: number) => 12000 + i
 
 /**
- * 드림피드(DiaryTab) + 내 일기(MyDiaryTab) UI 대조군 샘플.
- * 실제 사용자가 작성할 만한 감각 디테일 + 구구절절한 4단 해석을 담는다.
+ * 드림피드 시드 꿈들 (가상 사용자들이 작성한 것처럼 보이는 고품질 예시).
+ * 신규 가입자의 "내 일기" 에는 들어가지 않고, 오직 드림피드에서 다른 사용자의 꿈으로만 노출된다.
  * - 꿈 본문: 장소·색·소리·감각·감정 등 구체 묘사
  * - 해석: (1) 풍경 공감 → (2) 상징 해석 → (3) 심리 의미 → (4) 현실 조언
  */
 
-export const SAMPLE_DREAMS: DreamEntry[] = [
+const SEED_PUBLIC_DREAMS: PublicDream[] = [
   // 꿈 1 — 태몽 (basic / fascinating)
   {
     id: 'seed-1',
+    authorName: '복숭아내음',
+    authorInitial: '복',
     dream: `새벽에 꾼 꿈이에요. 공기가 서늘하고 냇물 냄새가 났어요.
 
 맑은 냇가에 혼자 서 있었는데, 물이 얕아서 발목까지 와도 차갑지 않고 미지근했어요. 건너편 둔덕에 제 키의 두 배쯤 되는 복숭아 나무 한 그루가 있어서 천천히 걸어갔어요. 물소리가 유난히 또렷했고, 햇살이 나뭇잎 사이로 반짝였어요.
@@ -45,6 +47,8 @@ export const SAMPLE_DREAMS: DreamEntry[] = [
   // 꿈 2 — 끝나지 않는 복도 (premium / scary)
   {
     id: 'seed-2',
+    authorName: '긴복도',
+    authorInitial: '긴',
     dream: `회사 건물 같은 곳이었어요. 오래된 형광등이 깜빡거리는 긴 복도를 혼자 걷고 있었어요. 바닥은 리놀륨인데 군데군데 타일이 깨져 있었고, 양쪽 벽에는 똑같이 생긴 문이 일정한 간격으로 늘어서 있었어요. 문 번호 같은 건 없었어요.
 
 걷기 시작한 지 얼마 지나지 않아서 뒤에서 발소리가 들렸어요. 제 걸음에 맞춰서 따라오다가, 제가 멈추면 상대도 멈췄어요. 뒤를 돌아봤는데 아무도 없었고, 대신 문이 원래보다 하나 더 늘어나 있었어요.
@@ -156,6 +160,8 @@ export const SAMPLE_DREAMS: DreamEntry[] = [
   // 꿈 3 — 앞니 빠지는 꿈 (basic / anxious)
   {
     id: 'seed-3',
+    authorName: '이른별',
+    authorInitial: '이',
     dream: `화장실 거울 앞이었어요. 제 모습이 평소보다 창백해 보였고, 입 안에서 뭔가 이상한 감각이 들어서 입을 벌려봤어요.
 
 위쪽 앞니 하나가 잇몸에서 살짝 흔들리고 있었어요. 손가락으로 살짝 건드렸을 뿐인데 "툭" 하고 빠져서 손바닥 위에 떨어졌어요. 이상하게 피는 한 방울도 나지 않았고, 빠진 자리에 아주 작은 홈만 남아 있었어요. 아프지도 않았어요.
@@ -181,7 +187,7 @@ export const SAMPLE_DREAMS: DreamEntry[] = [
     auspice: 'ominous',
     type: 'basic',
     date: '2026-04-16T05:40:00.000Z',
-    shared: false,
+    shared: true,
   },
 ]
 
@@ -195,6 +201,7 @@ export interface PublicDream extends DreamEntry {
 }
 
 export const PUBLIC_DREAMS: PublicDream[] = [
+  ...SEED_PUBLIC_DREAMS,
   {
     id: 'public-1',
     authorName: '달빛여우',
