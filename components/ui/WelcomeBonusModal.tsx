@@ -47,14 +47,14 @@ export default function WelcomeBonusModal({ open, onClose }: Props) {
             </div>
 
             <p style={{ fontSize: 18, fontWeight: 800, color: '#E8E8F4', lineHeight: 1.4 }}>
-              가입을 축하합니다!
+              기록의 시작을 환영해요
             </p>
 
             <p style={{ fontSize: 14, color: '#C0C4DC', lineHeight: 1.6 }}>
-              가입 축하 이벤트로<br />
+              첫 일기를 응원하는 마음으로<br />
               <span style={{ color: '#C4C0F5', fontWeight: 700 }}>
                 <DiamondIcon size={14} style={{ color: '#A09AEE', display: 'inline-block', verticalAlign: 'middle', marginRight: 3 }} />
-                50 크레딧
+                크레딧 50
               </span>
               을 드려요.
             </p>
@@ -79,7 +79,7 @@ export default function WelcomeBonusModal({ open, onClose }: Props) {
               onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.08)')}
               onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
             >
-              받기
+              기록 시작하기
             </button>
           </motion.div>
         </div>
