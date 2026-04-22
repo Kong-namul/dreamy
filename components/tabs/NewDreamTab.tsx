@@ -1,12 +1,20 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Mood, DreamEntry } from '@/types'
 import { useDreamStore } from '@/store/dreamStore'
 import MoodSelector from '@/components/dream/MoodSelector'
-import { DiamondIcon } from '@/components/ui/Icons'
+import { DiamondIcon, WritingPaperIcon } from '@/components/ui/Icons'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type Phase = 'idle' | 'loading'
+
+const PREMIUM_LOADING_MSGS = [
+  '그림일기로 옮기고 있어요...',
+  '장면을 그리고 있어요...',
+  '페이지를 넘기고 있어요...',
+  '그림일기가 거의 완성됐어요...',
+]
+const PREMIUM_MSG_INTERVAL_MS = 5000
 
 export default function NewDreamTab() {
   const { spendCredits, addDream, setActiveTab } = useDreamStore()
@@ -14,8 +22,30 @@ export default function NewDreamTab() {
   const [moods, setMoods] = useState<Mood[]>([])
   const [phase, setPhase] = useState<Phase>('idle')
   const [loadingMsg, setLoadingMsg] = useState('')
+  const premiumMsgTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const stopPremiumMsgRotation = () => {
+    if (premiumMsgTimerRef.current) {
+      clearInterval(premiumMsgTimerRef.current)
+      premiumMsgTimerRef.current = null
+    }
+  }
+
+  useEffect(() => () => stopPremiumMsgRotation(), [])
+
+  const startPremiumMsgRotation = () => {
+    stopPremiumMsgRotation()
+    let idx = 0
+    setLoadingMsg(PREMIUM_LOADING_MSGS[0])
+    premiumMsgTimerRef.current = setInterval(() => {
+      idx = Math.min(idx + 1, PREMIUM_LOADING_MSGS.length - 1)
+      setLoadingMsg(PREMIUM_LOADING_MSGS[idx])
+      if (idx === PREMIUM_LOADING_MSGS.length - 1) stopPremiumMsgRotation()
+    }, PREMIUM_MSG_INTERVAL_MS)
+  }
 
   const finish = (entry: DreamEntry) => {
+    stopPremiumMsgRotation()
     addDream(entry)              // 자동 저장 (최신순이라 내 일기 상단에 노출)
     setDream('')
     setMoods([])
@@ -47,6 +77,7 @@ export default function NewDreamTab() {
         shared: false,
       })
     } catch {
+      stopPremiumMsgRotation()
       setPhase('idle')
     }
   }
@@ -56,7 +87,7 @@ export default function NewDreamTab() {
     const ok = spendCredits(15, '그림일기')
     if (!ok) return
     setPhase('loading')
-    setLoadingMsg('그림일기로 옮기고 있어요...')
+    startPremiumMsgRotation()
     try {
       const res = await fetch('/api/diary', {
         method: 'POST',
@@ -79,6 +110,7 @@ export default function NewDreamTab() {
         shared: false,
       })
     } catch {
+      stopPremiumMsgRotation()
       setPhase('idle')
     }
   }
@@ -236,29 +268,34 @@ export default function NewDreamTab() {
               gap: 20,
             }}
           >
-            <div
+            <motion.div
+              animate={{ rotate: [-4, 4, -4], y: [0, -2, 0] }}
+              transition={{ duration: 2.2, ease: 'easeInOut', repeat: Infinity }}
               style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
+                width: 72,
+                height: 72,
+                borderRadius: 20,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'rgba(127,119,221,0.15)',
+                background: 'rgba(127,119,221,0.14)',
                 border: '1px solid rgba(127,119,221,0.3)',
-                animation: 'wiggle 1.8s ease-in-out infinite',
               }}
             >
-              <div
-                style={{
-                  width: 14,
-                  height: 14,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #C4C0F5, #9D96F0)',
-                }}
-              />
-            </div>
-            <p style={{ fontSize: 14, color: '#8890B0' }}>{loadingMsg}</p>
+              <WritingPaperIcon size={40} style={{ color: '#C4C0F5' }} />
+            </motion.div>
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={loadingMsg}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.35 }}
+                style={{ fontSize: 14, color: '#8890B0' }}
+              >
+                {loadingMsg}
+              </motion.p>
+            </AnimatePresence>
             <div style={{ display: 'flex', gap: 6 }}>
               {[0, 1, 2].map((i) => (
                 <div

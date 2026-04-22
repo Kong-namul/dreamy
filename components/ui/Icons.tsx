@@ -157,6 +157,30 @@ export const JournalIcon = ({ size = 18, className, style }: IconProps) => (
   </svg>
 )
 
+export const WritingPaperIcon = ({ size = 28, className, style }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 32 32" fill="none" className={className} style={style}>
+    {/* Paper */}
+    <rect x="7" y="5" width="16" height="22" rx="2.2" stroke="currentColor" strokeWidth="1.6" />
+    {/* Written lines */}
+    <path
+      d="M10.5 11h9M10.5 15h9M10.5 19h6"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+    />
+    {/* Pencil (diagonal, upper-right) */}
+    <path
+      d="M23.2 3.8l2.5 2.5-6.5 6.5-3 0.5 0.5-3 6.5-6.5z"
+      fill="currentColor"
+      fillOpacity="0.35"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinejoin="round"
+    />
+    <path d="M21.7 5.3l2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+  </svg>
+)
+
 export const SunIcon = ({ size = 18, className, style }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style}>
     <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
