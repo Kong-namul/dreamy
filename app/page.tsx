@@ -1,65 +1,100 @@
-import Image from "next/image";
+'use client'
+import { useSession } from 'next-auth/react'
+import { useState, useEffect } from 'react'
+import { useDreamStore } from '@/store/dreamStore'
+import StarField from '@/components/background/StarField'
+import CloudLayer from '@/components/background/CloudLayer'
+import Header from '@/components/layout/Header'
+import TabBar from '@/components/layout/TabBar'
+import NewDreamTab from '@/components/tabs/NewDreamTab'
+import DiaryTab from '@/components/tabs/DiaryTab'
+import MyDiaryTab from '@/components/tabs/MyDiaryTab'
+import StatsTab from '@/components/tabs/StatsTab'
+import CreditHistoryTab from '@/components/tabs/CreditHistoryTab'
+import SettingsTab from '@/components/tabs/SettingsTab'
+import TrashTab from '@/components/tabs/TrashTab'
+import CreditModal from '@/components/ui/CreditModal'
+import GlobalDreamModal from '@/components/dream/GlobalDreamModal'
+import Onboarding from '@/components/onboarding/Onboarding'
+import AuthScreen from '@/components/onboarding/AuthScreen'
+import { AnimatePresence, motion } from 'framer-motion'
+
+const TAB_MAP = {
+  new: NewDreamTab,
+  feed: DiaryTab,
+  log: StatsTab,
+  mydiary: MyDiaryTab,
+  history: CreditHistoryTab,
+  settings: SettingsTab,
+  trash: TrashTab,
+}
+
+const BG      = 'linear-gradient(180deg, #03050D 0%, #060C1C 50%, #0A1530 100%)'
+const BG_DARK = 'linear-gradient(180deg, #010204 0%, #020608 40%, #040C18 100%)'
 
 export default function Home() {
+  const { data: session, status } = useSession()
+  const { activeTab } = useDreamStore()
+  const [onboarded, setOnboarded] = useState<boolean | null>(null)
+  const [showAuth, setShowAuth] = useState(false)
+
+  useEffect(() => {
+    if (status === 'loading') return
+    const seen = localStorage.getItem('dreamy_onboarded')
+    setOnboarded(!!seen)
+  }, [status])
+
+  const handleGoToAuth = () => {
+    localStorage.setItem('dreamy_onboarded', '1')
+    setOnboarded(true)
+    setShowAuth(true)
+  }
+
+  const TabContent = TAB_MAP[activeTab as keyof typeof TAB_MAP] ?? TAB_MAP['new']
+
+  const showClouds = !!(onboarded || showAuth || session)
+  const cloudHeight = session ? '42%' : '30%'
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="relative min-h-screen overflow-hidden" style={{ background: BG }}>
+      <StarField />
+      {showClouds && <CloudLayer slideIn height={cloudHeight} />}
+
+      <div className="relative z-10">
+        {!session ? (
+          // Unauthenticated — wait until onboarded state is resolved
+          <div className="min-h-screen">
+            {onboarded === null ? null : (!onboarded && !showAuth)
+              ? <Onboarding onDone={handleGoToAuth} />
+              : <AuthScreen />
+            }
+          </div>
+        ) : (
+          // Authenticated
+          <div className="flex flex-col min-h-screen w-full">
+            <Header session={session} />
+            <main className="flex-1 w-full overflow-y-auto pb-24 lg:pb-12">
+              <div style={{ maxWidth: 560, margin: '0 auto', padding: '1.875rem 1.5rem 0' }}>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.22 }}
+                  >
+                    <TabContent />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </main>
+            <TabBar />
+          </div>
+        )}
+      </div>
+
+      {session && <CreditModal />}
+      {session && <GlobalDreamModal />}
     </div>
-  );
+  )
 }

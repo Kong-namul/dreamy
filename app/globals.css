@@ -1,26 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Jua&family=Nunito:wght@700;800&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.3/packages/wanted-sans/fonts/webfonts/WantedSans.css');
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-deep: #05080F;
+  --bg-navy: #0A1128;
+  --bg-surface: #111A3A;
+  --purple: #7F77DD;
+  --blue-glow: #4A7AFF;
+  --pink: #D4537E;
+  --text: #E8E8F4;
+  --subtext: #8890B0;
+
+  --cloud-back-blur: 12px;
+  --cloud-back-opacity: 0.1;
+  --cloud-mid-blur: 11px;
+  --cloud-mid-opacity: 0.1;
+  --cloud-front-blur: 8px;
+  --cloud-front-opacity: 0.1;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+html,
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  height: 100%;
+  background-color: var(--bg-deep);
+  color: var(--text);
+  font-family: 'Wanted Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Star field */
+.star {
+  position: absolute;
+  border-radius: 50%;
+  background: white;
+  animation: twinkle var(--duration, 3s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.4); }
+}
+
+/* Cloud animations */
+@keyframes bob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes bob2 {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Diary animations */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-10deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@keyframes bobSticker {
+  0%, 100% { transform: translateY(0) rotate(-5deg); }
+  50% { transform: translateY(-4px) rotate(5deg); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Glow effects */
+.glow-purple {
+  box-shadow: 0 0 20px rgba(127, 119, 221, 0.35);
+}
+
+.glow-pink {
+  box-shadow: 0 0 20px rgba(212, 83, 126, 0.35);
+}
+
+/* Glass morphism */
+.glass-card {
+  background: rgba(17, 26, 58, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Diary paper */
+.diary-paper {
+  background:
+    repeating-linear-gradient(
+      transparent,
+      transparent 28px,
+      #E8D5C4 28px,
+      #E8D5C4 29px
+    ),
+    #FFF8EC;
+}
+
+/* Scrollbar (전역) */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(127, 119, 221, 0.4);
+  border-radius: 2px;
+}
+
+/* 반응형 표시 제어 — 인라인 style 의 display 를 덮어쓰기 위해 !important 사용 */
+.mobile-only { display: flex !important; }
+.desktop-only { display: none !important; }
+@media (min-width: 1024px) {
+  .mobile-only { display: none !important; }
+  .desktop-only { display: block !important; }
+}
+
+/* 상세 모달 전용 — 라운드 코너 안쪽에 깔끔하게 들어가는 얇은 스크롤바 */
+.dream-modal-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(127, 119, 221, 0.35) transparent;
+}
+.dream-modal-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.dream-modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 12px 0;     /* 위아래 여백 — 라운드 코너 영역 침범 방지 */
+}
+.dream-modal-scroll::-webkit-scrollbar-thumb {
+  background: rgba(127, 119, 221, 0.3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.dream-modal-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(127, 119, 221, 0.55);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+.font-gaegu { font-family: 'Gaegu', cursive; }
