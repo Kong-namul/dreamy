@@ -157,27 +157,26 @@ export const JournalIcon = ({ size = 18, className, style }: IconProps) => (
   </svg>
 )
 
-export const WritingPaperIcon = ({ size = 28, className, style }: IconProps) => (
+export const WritingPaperIcon = ({ size = 28, className, style, strokeWidth = 1.6 }: IconProps & { strokeWidth?: number }) => (
   <svg width={size} height={size} viewBox="0 0 32 32" fill="none" className={className} style={style}>
     {/* Paper */}
-    <rect x="7" y="5" width="16" height="22" rx="2.2" stroke="currentColor" strokeWidth="1.6" />
+    <rect x="7" y="5" width="16" height="22" rx="2.2" stroke="currentColor" strokeWidth={strokeWidth} />
     {/* Written lines */}
     <path
       d="M10.5 11h9M10.5 15h9M10.5 19h6"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
     />
-    {/* Pencil (diagonal, upper-right) */}
+    {/* Pencil (diagonal, upper-right) — solid dark fill so paper lines don't bleed through */}
     <path
       d="M23.2 3.8l2.5 2.5-6.5 6.5-3 0.5 0.5-3 6.5-6.5z"
-      fill="currentColor"
-      fillOpacity="0.35"
+      fill="#060C1C"
       stroke="currentColor"
-      strokeWidth="1.4"
+      strokeWidth={strokeWidth * 0.875}
       strokeLinejoin="round"
     />
-    <path d="M21.7 5.3l2.5 2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M21.7 5.3l2.5 2.5" stroke="currentColor" strokeWidth={strokeWidth * 0.875} strokeLinecap="round" />
   </svg>
 )
 

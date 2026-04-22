@@ -271,18 +271,9 @@ export default function NewDreamTab() {
             <motion.div
               animate={{ rotate: [-4, 4, -4], y: [0, -2, 0] }}
               transition={{ duration: 2.2, ease: 'easeInOut', repeat: Infinity }}
-              style={{
-                width: 72,
-                height: 72,
-                borderRadius: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(127,119,221,0.14)',
-                border: '1px solid rgba(127,119,221,0.3)',
-              }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <WritingPaperIcon size={40} style={{ color: '#C4C0F5' }} />
+              <WritingPaperIcon size={64} strokeWidth={1.0} style={{ color: '#C4C0F5' }} />
             </motion.div>
             <AnimatePresence mode="wait">
               <motion.p
