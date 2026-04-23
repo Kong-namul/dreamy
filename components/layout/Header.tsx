@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDreamStore } from '@/store/dreamStore'
 import { TabId } from '@/types'
-import { DreamyLogo, DiamondIcon, CloseIcon, PersonIcon } from '@/components/ui/Icons'
+import { DreamyLogo, DiamondIcon, CloseIcon, PersonIcon, SwapArrowsIcon } from '@/components/ui/Icons'
 import { getAvatarAsset } from '@/lib/avatar'
 
 const TAB_LABELS: Record<TabId & ('new' | 'feed' | 'log'), { ko: string; en: string }> = {
@@ -171,12 +171,14 @@ export default function Header({ session }: { session: Session }) {
         </button>
         <button
           onClick={() => { toggleLocale() }}
-          style={menuItemStyle}
+          style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 8 }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           aria-label="Toggle language"
         >
-          한글 ⇄ English
+          <span>한글</span>
+          <SwapArrowsIcon size={14} style={{ color: '#8890B0' }} />
+          <span>ENG</span>
         </button>
         <button
           onClick={() => { setActiveTab('settings'); setAvatarOpen(false) }}

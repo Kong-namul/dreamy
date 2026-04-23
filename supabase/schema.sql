@@ -49,6 +49,7 @@ create table if not exists public.dreams (
   interpretation_blocks   jsonb,
   lucky                   jsonb,
   shared                  boolean not null default false,
+  translations            jsonb,                       -- locale 별 번역 캐시 (ex. { en: {...} })
   created_at              timestamptz not null default now(),
   deleted_at              timestamptz
 );

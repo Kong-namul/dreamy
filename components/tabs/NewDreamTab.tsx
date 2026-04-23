@@ -145,53 +145,95 @@ export default function NewDreamTab() {
             exit={{ opacity: 0 }}
             style={{ display: 'flex', flexDirection: 'column', gap: 20 }}
           >
+            {/* Title */}
             <div style={{ padding: '0 4px' }}>
-              <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>어떤 꿈을 꾸셨나요?</p>
-              <p style={{ fontSize: 13, color: '#8890B0', marginTop: 4 }}>
-                기억나는 장면·감각·감정을 자유롭게 적어주세요
+              <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>
+                어떤 꿈을 꾸셨나요?
+              </p>
+              <p style={{ fontSize: 13, color: '#8890B0', marginTop: 6 }}>
+                떠오르는 대로 적어주세요. 색·소리·냄새 디테일이 있을수록 해석이 풍부해져요.
               </p>
             </div>
 
-            <textarea
-              value={dream}
-              onChange={(e) => setDream(e.target.value)}
-              placeholder="오늘 꾼 꿈을 적어보세요..."
-              rows={7}
+            {/* Book-shaped input */}
+            <div
               style={{
-                width: '100%',
-                padding: '16px 18px',
-                borderRadius: 16,
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(127,119,221,0.2)',
-                color: '#E8E8F4',
-                fontSize: 15,
-                lineHeight: 1.6,
-                outline: 'none',
-                resize: 'vertical',
-                fontFamily: 'inherit',
-                boxSizing: 'border-box',
+                display: 'flex',
+                borderRadius: '8px 16px 16px 8px',
+                overflow: 'hidden',
+                boxShadow: '0 16px 48px rgba(0,0,0,0.55), 4px 4px 12px rgba(0,0,0,0.3)',
               }}
-            />
+            >
+              <div style={{
+                width: 26,
+                flexShrink: 0,
+                background: 'linear-gradient(90deg, #12103A 0%, #2A2475 55%, #1E1A58 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <div style={{ width: 1, height: '75%', background: 'rgba(255,255,255,0.08)', borderRadius: 1 }} />
+              </div>
+              <div
+                style={{
+                  flex: 1,
+                  padding: '20px 20px 12px',
+                  background: `repeating-linear-gradient(transparent, transparent 27px, #E8D5C4 27px, #E8D5C4 28px), #FFF8EC`,
+                }}
+              >
+                <textarea
+                  value={dream}
+                  onChange={(e) => setDream(e.target.value)}
+                  placeholder="오늘 밤 꾼 꿈을 적어주세요..."
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    outline: 'none',
+                    resize: 'none',
+                    border: 'none',
+                    fontFamily: "'Jua', sans-serif",
+                    color: '#2D1F0E',
+                    fontSize: 17,
+                    lineHeight: '28px',
+                    minHeight: 196,
+                    caretColor: '#7F77DD',
+                  }}
+                />
+                <div style={{ textAlign: 'right', fontSize: 11, color: '#9B8060', marginTop: 4 }}>
+                  {dream.length}자
+                </div>
+              </div>
+            </div>
 
-            <MoodSelector values={moods} onChange={setMoods} />
+            {/* Mood */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p style={{ fontSize: 12, fontWeight: 500, color: '#555E80' }}>꿈의 기분</p>
+              <MoodSelector values={moods} onChange={setMoods} />
+            </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+            {/* Action buttons */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
               <button
                 onClick={handleBasic}
                 disabled={!dream.trim()}
                 style={{
-                  flex: 1,
-                  padding: '14px 0',
-                  borderRadius: 14,
-                  background: 'rgba(127,119,221,0.16)',
-                  color: '#C4C0F5',
-                  border: '1px solid rgba(127,119,221,0.4)',
-                  fontSize: 14,
+                  padding: '18px 0',
+                  borderRadius: 16,
                   fontWeight: 700,
+                  fontSize: 15,
+                  background: '#C44B72',
+                  color: 'white',
+                  border: 'none',
                   cursor: dream.trim() ? 'pointer' : 'not-allowed',
-                  opacity: dream.trim() ? 1 : 0.5,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: dream.trim() ? 1 : 0.35,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
+                  transition: 'filter 0.15s',
                 }}
+                onMouseEnter={(e) => { if (dream.trim()) e.currentTarget.style.filter = 'brightness(1.1)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)' }}
               >
                 <span>기본 해석</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}>
@@ -202,20 +244,22 @@ export default function NewDreamTab() {
                 onClick={handlePremium}
                 disabled={!dream.trim()}
                 style={{
-                  flex: 1,
-                  padding: '14px 0',
-                  borderRadius: 14,
-                  background: 'linear-gradient(135deg, #7F77DD, #C44B72)',
+                  padding: '18px 0',
+                  borderRadius: 16,
+                  fontWeight: 700,
+                  fontSize: 15,
+                  background: 'linear-gradient(145deg, #7F77DD, #C44B72)',
                   color: 'white',
                   border: 'none',
-                  fontSize: 14,
-                  fontWeight: 700,
                   cursor: dream.trim() ? 'pointer' : 'not-allowed',
-                  opacity: dream.trim() ? 1 : 0.5,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: dream.trim() ? 1 : 0.35,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 3,
                   transition: 'filter 0.15s',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.filter = 'brightness(1.08)' }}
+                onMouseEnter={(e) => { if (dream.trim()) e.currentTarget.style.filter = 'brightness(1.1)' }}
                 onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)' }}
               >
                 <span>그림일기</span>

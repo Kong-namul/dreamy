@@ -24,9 +24,10 @@ type DbDream = {
   shared: boolean
   created_at: string
   deleted_at: string | null
+  translations: Record<string, unknown> | null
 }
 
-function toClient(d: DbDream): DreamEntry & { deletedAt?: string | null } {
+function toClient(d: DbDream): DreamEntry & { deletedAt?: string | null; translations?: Record<string, unknown> | null } {
   return {
     id: d.id,
     dream: d.dream,
@@ -41,6 +42,7 @@ function toClient(d: DbDream): DreamEntry & { deletedAt?: string | null } {
     shared: d.shared,
     date: d.created_at,
     deletedAt: d.deleted_at,
+    translations: d.translations,
   }
 }
 
@@ -66,7 +68,7 @@ export async function GET() {
   const supa = supabaseServer()
   const { data, error } = await supa
     .from('dreams')
-    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at')
+    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -110,7 +112,7 @@ export async function POST(req: Request) {
       lucky: body.lucky ?? null,
       shared: body.shared ?? false,
     })
-    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at')
+    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations')
     .single()
 
   if (error || !data) {

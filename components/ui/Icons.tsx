@@ -205,6 +205,17 @@ export const SaveIcon = ({ size = 18, className, style }: IconProps) => (
   </svg>
 )
 
+export const SwapArrowsIcon = ({ size = 14, className, style }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className={className} style={style}>
+    {/* 상단 화살표 — 왼쪽에서 오른쪽 */}
+    <path d="M3.5 7h11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M12 4.5L14.5 7L12 9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    {/* 하단 화살표 — 오른쪽에서 왼쪽 */}
+    <path d="M16.5 13h-11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M8 10.5L5.5 13L8 15.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
 export const ArrowLeftIcon = ({ size = 16, className, style }: IconProps) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} style={style}>
     <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
