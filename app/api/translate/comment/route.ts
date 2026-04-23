@@ -10,6 +10,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 
+export const maxDuration = 60
+
 export async function POST(req: Request) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return NextResponse.json({ error: 'anthropic not configured' }, { status: 500 })

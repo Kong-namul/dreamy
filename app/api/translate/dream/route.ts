@@ -16,6 +16,10 @@ import Anthropic from '@anthropic-ai/sdk'
 import { auth } from '@/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 
+// Claude 번역이 길 땐 10~20초 걸릴 수 있어 Vercel 기본 10s 타임아웃을 늘린다.
+// Hobby 플랜은 상한(10s) 으로 자동 clamp, Pro 플랜은 60s 까지 사용.
+export const maxDuration = 60
+
 type DreamRow = {
   id: string
   user_id: string
