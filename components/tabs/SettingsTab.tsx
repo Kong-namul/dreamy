@@ -488,12 +488,14 @@ function WithdrawConfirmModal({
             <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>정말 탈퇴하시겠어요?</p>
             <div style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.7 }}>
               탈퇴 시 다음 항목이 <span style={{ color: '#E8899A', fontWeight: 600 }}>모두 초기화</span>돼요:
-              <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4, listStyleType: 'disc', listStylePosition: 'outside' }}>
-                <li>기록한 꿈 전체</li>
-                <li>보유 크레딧 및 충전 내역</li>
-                <li>닉네임·아바타·프로필</li>
-                <li>내가 단 댓글</li>
-              </ul>
+              <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {['기록한 꿈 전체', '보유 크레딧 및 충전 내역', '닉네임·아바타·프로필', '내가 단 댓글'].map((item) => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ color: '#C4C0F5', flexShrink: 0, lineHeight: 1.7 }}>•</span>
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
               <p style={{ marginTop: 10, fontSize: 12, color: '#555E80' }}>
                 동일한 구글 계정으로 다시 로그인해도 <strong style={{ color: '#8890B0' }}>새 계정으로 시작</strong>되며 이전 기록은 복구되지 않아요.
               </p>
