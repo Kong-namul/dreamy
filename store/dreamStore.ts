@@ -43,6 +43,7 @@ interface DreamStore {
   permanentlyDeleteDream: (id: string) => void  // 휴지통 영구 삭제
   resetAll: () => void                       // 탈퇴 시 모든 로컬 상태 초기화
   hydrateFromServer: (dreams: DreamEntry[], deletedDreams: DreamEntry[]) => void   // 로그인 시 DB → 로컬 싱크
+  hydrateCreditHistory: (history: CreditTransaction[]) => void
   setInterpretDraft: (draft: { dream: string; moods: Mood[] }) => void
   setInterpretJob: (job: InterpretJob | null) => void
   updateInterpretMsg: (msg: string) => void
@@ -207,6 +208,7 @@ export const useDreamStore = create<DreamStore>()(
       hydrateFromServer: (dreams, deletedDreams) => {
         set({ dreams, deletedDreams })
       },
+      hydrateCreditHistory: (history) => set({ creditHistory: history }),
       setInterpretDraft: (draft) => set({ interpretDraft: draft }),
       setInterpretJob: (job) => set({ interpretJob: job }),
       updateInterpretMsg: (msg: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg } } : {}),

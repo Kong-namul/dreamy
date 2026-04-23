@@ -37,7 +37,7 @@ const BG_DARK = 'linear-gradient(180deg, #010204 0%, #020608 40%, #040C18 100%)'
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer, setCredits } = useDreamStore()
+  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer, setCredits, hydrateCreditHistory } = useDreamStore()
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false)
@@ -89,6 +89,17 @@ export default function Home() {
             const { dreams, deletedDreams } = await dreamsRes.json()
             if (!cancelled && Array.isArray(dreams)) {
               hydrateFromServer(dreams, Array.isArray(deletedDreams) ? deletedDreams : [])
+            }
+          }
+        } catch { /* 네트워크 실패 시 로컬 유지 */ }
+
+        // 충전 히스토리 서버 동기화
+        try {
+          const histRes = await fetch('/api/credits/history')
+          if (histRes.ok) {
+            const { history } = await histRes.json()
+            if (!cancelled && Array.isArray(history)) {
+              hydrateCreditHistory(history)
             }
           }
         } catch { /* 네트워크 실패 시 로컬 유지 */ }

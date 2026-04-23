@@ -162,14 +162,6 @@ export default function Header({ session }: { session: Session }) {
         }}
       >
         <button
-          onClick={() => { setActiveTab('mydiary'); setAvatarOpen(false) }}
-          style={menuItemStyle}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-        >
-          {locale === 'en' ? 'My Diary' : '내 일기'}
-        </button>
-        <button
           onClick={() => { toggleLocale() }}
           style={{ ...menuItemStyle, display: 'flex', alignItems: 'center', gap: 8 }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
@@ -179,6 +171,14 @@ export default function Header({ session }: { session: Session }) {
           <span>한글</span>
           <SwapArrowsIcon size={14} style={{ color: '#8890B0' }} />
           <span>ENG</span>
+        </button>
+        <button
+          onClick={() => { setActiveTab('mydiary'); setAvatarOpen(false) }}
+          style={menuItemStyle}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+        >
+          {locale === 'en' ? 'My Diary' : '내 일기'}
         </button>
         <button
           onClick={() => { setActiveTab('settings'); setAvatarOpen(false) }}
