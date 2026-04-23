@@ -26,6 +26,7 @@ interface PaymentMethod {
   color: string
   initial: string
   logoUrl: string  // Simple Icons CDN — 흰색 SVG
+  comingSoon?: boolean   // true 면 비활성 + "준비 중" 뱃지
 }
 
 // 로고 소스:
@@ -48,6 +49,7 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#1652F0',
     initial: 'C',
     logoUrl: 'https://cdn.simpleicons.org/coinbase/FFFFFF',
+    comingSoon: true,
   },
   {
     id: 'bitpay',
@@ -57,6 +59,7 @@ const PAYMENTS: PaymentMethod[] = [
     initial: 'Ƀ',
     // BitPay 앱 아이콘 (B-only, 180x180 PNG) — bitpay.com apple-touch-icon
     logoUrl: 'https://framerusercontent.com/images/2iIIkkV5Qoskq2dfhwja8G8rFW0.png',
+    comingSoon: true,
   },
   {
     id: 'stripe',
@@ -65,6 +68,7 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#635BFF',
     initial: 'S',
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
+    comingSoon: true,
   },
   {
     id: 'binance',
@@ -73,10 +77,12 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#F3BA2F',
     initial: 'ß',
     logoUrl: 'https://cdn.simpleicons.org/binance/FFFFFF',
+    comingSoon: true,
   },
 ]
 
-// Base 공식 심볼 — 원 + 오른쪽 수평선 패턴. 부모 박스 100% 채움.
+// Base Pay 아이콘 — 2024 리브랜드: 파란 둥근 사각형 배경 + 흰 Base 심볼 (원 + 오른쪽 수평선)
+// 부모 타일(borderRadius 10)에 이미 파란 바탕이라 SVG 안에서는 symbol 만 그린다.
 function BaseSymbol() {
   return (
     <svg width="100%" height="100%" viewBox="0 0 111 111" fill="white" xmlns="http://www.w3.org/2000/svg">
@@ -107,18 +113,20 @@ function PaymentLogo({ pm }: { pm: PaymentMethod }) {
   //   padding 작음 → 로고 큼
   // 브랜드별 padding: base 풀블리드(0), coinbase 약간(7), bitpay 거의풀(4), stripe 크게(10), 나머지 중간(8)
   const padding =
-    pm.id === 'base' ? 7 :
+    pm.id === 'base' ? 9 :     // 리브랜드 후 더 "app icon" 느낌: 바탕 여백 늘려서 rounded-square 가독성 ↑
     pm.id === 'coinbase' ? 7 :
     pm.id === 'bitpay' ? 0 :   // 앱 아이콘 — 타일에 꽉차게
     pm.id === 'stripe' ? 10 :
     8
+
+  const tileBorderRadius = pm.id === 'base' ? 12 : 10   // Base 는 더 둥글게 (iOS app icon 스타일)
 
   return (
     <div
       style={{
         width: 36,
         height: 36,
-        borderRadius: 10,
+        borderRadius: tileBorderRadius,
         background: pm.color,
         color: 'white',
         flexShrink: 0,
@@ -586,7 +594,8 @@ export default function CreditModal() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                       {PAYMENTS.map((pm) => {
                         const busy = payingId === pm.id
-                        const disabled = !!payingId
+                        const comingSoon = !!pm.comingSoon
+                        const disabled = !!payingId || comingSoon
                         return (
                           <button
                             key={pm.id}
@@ -602,7 +611,8 @@ export default function CreditModal() {
                               background: 'rgba(255,255,255,0.04)',
                               border: '1px solid rgba(255,255,255,0.08)',
                               cursor: disabled ? 'not-allowed' : 'pointer',
-                              opacity: disabled && !busy ? 0.5 : 1,
+                              opacity: comingSoon ? 0.45 : (disabled && !busy ? 0.5 : 1),
+                              filter: comingSoon ? 'grayscale(0.4)' : 'none',
                               transition: 'background 0.15s, border-color 0.15s',
                             }}
                             onMouseEnter={(e) => {
@@ -618,11 +628,16 @@ export default function CreditModal() {
                           >
                             <PaymentLogo pm={pm} />
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
-                              <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>
+                              <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 {pm.label}
-                                {((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')
+                                {comingSoon && (
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#8890B0', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 999, letterSpacing: 0.3 }}>
+                                    준비 중
+                                  </span>
+                                )}
+                                {!comingSoon && ((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')
                                   || (pm.id === 'bitpay' && process.env.NEXT_PUBLIC_BITPAY_TESTNET === 'true')) && (
-                                  <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#C4C0F5', background: 'rgba(127,119,221,0.18)', padding: '2px 6px', borderRadius: 999 }}>
+                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#C4C0F5', background: 'rgba(127,119,221,0.18)', padding: '2px 6px', borderRadius: 999 }}>
                                     TESTNET
                                   </span>
                                 )}
