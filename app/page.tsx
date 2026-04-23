@@ -51,8 +51,8 @@ export default function Home() {
   useEffect(() => {
     if (!session?.user?.email) return
     let cancelled = false
-    // DB 측 유저 row 를 보장하고, 생성된 경우(=신규 가입) welcome bonus 를 띄운다.
-    // 재가입(탈퇴 후 같은 이메일)이면 created=true 로 돌아와 같은 플로우.
+    // DB 측 유저 row 를 보장. ensure API 의 created=true 일 때만 welcome bonus 표시
+    // (=완전 신규 가입 또는 탈퇴 후 재가입). 기존 로그인은 조용히 동기화만.
     ;(async () => {
       try {
         const res = await fetch('/api/user/ensure', { method: 'POST' })
@@ -63,7 +63,7 @@ export default function Home() {
         }
         if (cancelled) return
 
-        // 신규 가입(재가입 포함) → 서버가 생성한 랜덤 닉/아바타를 로컬에도 반영 + welcome 팝업
+        // 신규 생성 → 서버가 부여한 랜덤 닉/아바타 반영 + welcome 팝업
         if (created && user) {
           setNickname(user.nickname)
           if (user.avatar_url) setAvatarUrl(user.avatar_url)
@@ -71,16 +71,10 @@ export default function Home() {
           return
         }
 
-        // 이미 DB 유저 있는 기존 회원. 로컬 기본값이면 서버 값으로 동기화.
+        // 기존 유저 — 로컬 기본값이면 서버 값으로 동기화만 (팝업 없음)
         if (user) {
           if (nickname === DEFAULT_NICKNAME) setNickname(user.nickname)
           if (!avatarUrl && user.avatar_url) setAvatarUrl(user.avatar_url)
-        }
-
-        // (DB 연동 전 환경 호환) welcome bonus 플래그가 없는 기존 로컬 유저에게도 한 번 노출
-        const key = `dreamy_welcome_bonus_${session.user!.email}`
-        if (!localStorage.getItem(key)) {
-          setShowWelcomeBonus(true)
         }
       } catch {
         /* 네트워크 오류 시 조용히 무시 — 다음 세션에서 재시도됨 */

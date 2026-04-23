@@ -409,11 +409,10 @@ export default function CreditModal() {
                   style={{
                     padding: '11px 20px',
                     borderRadius: 999,
-                    background: '#7F77DD',  // 앱 포인트 보라
-                    color: 'white',
+                    background: '#7F77DD',  // 앱 포인트 보라 단색
+                    color: '#03050D',       // 가장 어두운 네이비
                     fontSize: 13,
                     fontWeight: 700,
-                    boxShadow: '0 12px 32px rgba(127,119,221,0.45)',
                     whiteSpace: 'nowrap',
                     pointerEvents: 'none',
                   }}
