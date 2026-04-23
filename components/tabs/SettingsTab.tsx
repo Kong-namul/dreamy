@@ -169,7 +169,7 @@ export default function SettingsTab() {
         로그아웃
       </button>
 
-      {/* Withdraw — 조금 더 숨김처리 톤. 탈퇴는 신중해야 해서 작게 배치 */}
+      {/* Withdraw — 로그아웃 하단, 약간만 숨김 톤 유지 */}
       <button
         onClick={() => setWithdrawOpen(true)}
         style={{
@@ -178,8 +178,8 @@ export default function SettingsTab() {
           marginTop: -4,
           background: 'none',
           border: 'none',
-          color: '#555E80',
-          fontSize: 12,
+          color: '#8890B0',
+          fontSize: 14,
           textDecoration: 'underline',
           textUnderlineOffset: 3,
           cursor: 'pointer',
