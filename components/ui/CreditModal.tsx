@@ -170,6 +170,13 @@ export default function CreditModal() {
   const [picked, setPicked] = useState<Package | null>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
   const [payError, setPayError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 2000)
+    return () => clearTimeout(t)
+  }, [toast])
 
   // 모달 열린 동안 body 스크롤 잠금
   useEffect(() => {
@@ -334,6 +341,10 @@ export default function CreditModal() {
 
   const handlePay = (payment: PaymentMethod) => {
     if (payingId) return  // 이미 진행 중이면 무시
+    if (payment.comingSoon) {
+      setToast(`${payment.label} 는 준비 중이에요`)
+      return
+    }
     if (payment.id === 'base') {
       handleBasePay()
       return
@@ -373,6 +384,38 @@ export default function CreditModal() {
             padding: 16,
           }}
         >
+          {/* Top-center toast */}
+          <AnimatePresence>
+            {toast && (
+              <motion.div
+                key="toast"
+                initial={{ opacity: 0, y: -16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  position: 'fixed',
+                  top: 24,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 100,
+                  padding: '10px 18px',
+                  borderRadius: 999,
+                  background: 'rgba(13,19,48,0.95)',
+                  border: '1px solid rgba(127,119,221,0.45)',
+                  color: '#E8E8F4',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                  backdropFilter: 'blur(8px)',
+                  whiteSpace: 'nowrap',
+                  pointerEvents: 'none',
+                }}
+              >
+                {toast}
+              </motion.div>
+            )}
+          </AnimatePresence>
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
@@ -595,7 +638,7 @@ export default function CreditModal() {
                       {PAYMENTS.map((pm) => {
                         const busy = payingId === pm.id
                         const comingSoon = !!pm.comingSoon
-                        const disabled = !!payingId || comingSoon
+                        const disabled = !!payingId  // comingSoon 은 onClick 허용 → 토스트
                         return (
                           <button
                             key={pm.id}
@@ -611,8 +654,8 @@ export default function CreditModal() {
                               background: 'rgba(255,255,255,0.04)',
                               border: '1px solid rgba(255,255,255,0.08)',
                               cursor: disabled ? 'not-allowed' : 'pointer',
-                              opacity: comingSoon ? 0.45 : (disabled && !busy ? 0.5 : 1),
-                              filter: comingSoon ? 'grayscale(0.4)' : 'none',
+                              opacity: comingSoon ? 0.72 : (disabled && !busy ? 0.5 : 1),
+                              filter: comingSoon ? 'grayscale(0.15)' : 'none',
                               transition: 'background 0.15s, border-color 0.15s',
                             }}
                             onMouseEnter={(e) => {
