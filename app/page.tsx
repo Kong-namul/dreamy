@@ -37,7 +37,7 @@ const BG_DARK = 'linear-gradient(180deg, #010204 0%, #020608 40%, #040C18 100%)'
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer } = useDreamStore()
+  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer, setCredits } = useDreamStore()
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false)
@@ -58,26 +58,28 @@ export default function Home() {
         const res = await fetch('/api/user/ensure', { method: 'POST' })
         if (!res.ok) return
         const { user, created } = await res.json() as {
-          user: { nickname: string; avatar_url: string | null } | null
+          user: { nickname: string; avatar_url: string | null; credits?: number } | null
           created: boolean
         }
         if (cancelled) return
 
-        // 신규 생성 → 서버가 부여한 랜덤 닉/아바타 반영 + welcome 팝업
+        // 신규 생성 → 서버가 부여한 랜덤 닉/아바타·크레딧 반영 + welcome 팝업
         if (created && user) {
           setNickname(user.nickname)
           if (user.avatar_url) setAvatarUrl(user.avatar_url)
+          if (typeof user.credits === 'number') setCredits(user.credits)
           setShowWelcomeBonus(true)
           return
         }
 
         // 기존 유저 — DB 가 진실의 원천. 항상 서버 값으로 동기화해서
-        // 기기별 로컬 캐시 차이를 제거한다.
+        // 기기별 로컬 캐시 차이를 제거한다. 닉네임·아바타·크레딧 모두.
         if (user) {
           if (user.nickname && user.nickname !== nickname) setNickname(user.nickname)
           if (user.avatar_url !== undefined && user.avatar_url !== avatarUrl) {
             setAvatarUrl(user.avatar_url ?? null)
           }
+          if (typeof user.credits === 'number') setCredits(user.credits)
         }
 
         // 꿈 목록 서버 동기화 — 다른 기기에서도 보이게

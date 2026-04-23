@@ -26,7 +26,27 @@ async function runInterpret(type: 'basic' | 'premium') {
 
   const cost = type === 'basic' ? 5 : 15
   const label = type === 'basic' ? '기본 해석' : '그림일기'
-  if (!store.spendCredits(cost, label)) return
+
+  // 서버에 먼저 차감 요청 → 진실의 원천이 DB 라 다른 기기에서도 일치
+  try {
+    const spendRes = await fetch('/api/credits/spend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: cost, label }),
+    })
+    if (!spendRes.ok) {
+      // 잔액 부족 (402) 또는 서버 오류 — 크레딧 모달 열기
+      store.setCreditModalOpen(true)
+      return
+    }
+    const body = await spendRes.json()
+    if (typeof body?.credits === 'number') {
+      store.setCredits(body.credits)
+    }
+  } catch {
+    // 네트워크 실패 → 로컬 검증으로 폴백 (오프라인 UX 유지)
+    if (!store.spendCredits(cost, label)) return
+  }
 
   const initialMsg = type === 'basic' ? '꿈을 해석하고 있어요...' : PREMIUM_LOADING_MSGS[0]
   store.setInterpretJob({ type, msg: initialMsg, startedAt: Date.now() })

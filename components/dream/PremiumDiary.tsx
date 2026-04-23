@@ -49,7 +49,7 @@ function DiaryPageCard({ page, index, visible }: { page: { title: string; text: 
 }
 
 export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fortuneLoading }: Props) {
-  const { spendCredits } = useDreamStore()
+  const { spendCredits, setCredits, setCreditModalOpen } = useDreamStore()
   const [visibleCount, setVisibleCount] = useState(0)
   const [saved, setSaved] = useState(false)
 
@@ -63,7 +63,21 @@ export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fo
   }, [entry.pages])
 
   const handleSave = () => { onSave(); setSaved(true) }
-  const handleFortune = () => { const ok = spendCredits(3); if (ok) onFortune() }
+  const handleFortune = async () => {
+    try {
+      const res = await fetch('/api/credits/spend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: 3, label: '오늘의 운세' }),
+      })
+      if (!res.ok) { setCreditModalOpen(true); return }
+      const body = await res.json()
+      if (typeof body?.credits === 'number') setCredits(body.credits)
+      onFortune()
+    } catch {
+      if (spendCredits(3, '오늘의 운세')) onFortune()
+    }
+  }
 
   if (!entry.pages) return null
 
