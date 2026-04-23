@@ -1,34 +1,23 @@
 'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MoonIcon, CloudMoonIcon, JournalIcon } from '@/components/ui/Icons'
-const SLIDES = [
-  {
-    Icon: MoonIcon,
-    color: '#7F77DD',
-    bg: 'rgba(127,119,221,0.12)',
-    title: '오늘 꾼 꿈,\n기억하고 싶지 않으세요?',
-    desc: '매일 아침 흐릿해지는 꿈을\nDreamy가 기록해드려요.',
-  },
-  {
-    Icon: CloudMoonIcon,
-    color: '#4A7AFF',
-    bg: 'rgba(74,122,255,0.12)',
-    title: 'AI가 당신의 꿈을\n따뜻하게 해석해요',
-    desc: '상징과 무의식을 분석해\n3~4문장의 맞춤 해석을 드려요.',
-  },
-  {
-    Icon: JournalIcon,
-    color: '#C44B72',
-    bg: 'rgba(196,75,114,0.12)',
-    title: '그림일기로\n꿈을 아름답게 기록해요',
-    desc: '5페이지 손그림 일기로 꿈의\n이야기를 펼쳐보세요.',
-  },
+import { MoonIcon, CloudMoonIcon, JournalIcon, SwapArrowsIcon } from '@/components/ui/Icons'
+import { useDreamStore } from '@/store/dreamStore'
+import { useT } from '@/lib/i18n'
+
+type SlideKey = 'record' | 'interpret' | 'diary'
+
+const SLIDES: { key: SlideKey; Icon: typeof MoonIcon; color: string; bg: string }[] = [
+  { key: 'record',    Icon: MoonIcon,      color: '#7F77DD', bg: 'rgba(127,119,221,0.12)' },
+  { key: 'interpret', Icon: CloudMoonIcon, color: '#4A7AFF', bg: 'rgba(74,122,255,0.12)' },
+  { key: 'diary',     Icon: JournalIcon,   color: '#C44B72', bg: 'rgba(196,75,114,0.12)' },
 ]
 
 export default function Onboarding({ onDone }: { onDone: () => void }) {
   const [step, setStep] = useState(0)
   const [shimmer, setShimmer] = useState(false)
+  const toggleLocale = useDreamStore((s) => s.toggleLocale)
+  const t = useT()
 
   const isLast = step === SLIDES.length - 1
 
@@ -42,17 +31,28 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
   const slide = SLIDES[step]
   const Icon = slide.Icon
+  const title = t(`onboard.${slide.key}.title`)
+  const desc = t(`onboard.${slide.key}.desc`)
 
   return (
     <div className="flex flex-col min-h-screen px-8 pt-10 pb-16 text-center">
-      {/* Skip */}
+      {/* Language toggle (건너뛰기 자리) */}
       <div className="w-full flex justify-end shrink-0">
         <button
-          onClick={() => onDone()}
-          className="text-xs px-3 py-1.5 rounded-full transition-colors"
-          style={{ color: '#555E80' }}
+          onClick={toggleLocale}
+          aria-label="Toggle language"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 12, fontWeight: 600,
+            padding: '6px 12px', borderRadius: 9999,
+            background: 'rgba(127,119,221,0.12)',
+            border: '1px solid rgba(127,119,221,0.3)',
+            color: '#C0C4DC', cursor: 'pointer',
+          }}
         >
-          건너뛰기
+          <span>한글</span>
+          <SwapArrowsIcon size={12} style={{ color: '#8890B0' }} />
+          <span>ENG</span>
         </button>
       </div>
 
@@ -84,13 +84,13 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
                 className="text-2xl leading-tight whitespace-pre-line"
                 style={{ color: '#E8E8F4', WebkitTextStroke: '0.6px #E8E8F4' }}
               >
-                {slide.title}
+                {title}
               </h2>
               <p
                 className="leading-6 whitespace-pre-line"
                 style={{ fontSize: 16, color: '#8890B0' }}
               >
-                {slide.desc}
+                {desc}
               </p>
             </div>
           </motion.div>
@@ -146,7 +146,7 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
                 }}
               />
             )}
-            {isLast ? '시작하기' : '다음'}
+            {isLast ? t('onboard.start') : t('onboard.next')}
           </button>
         </div>
       </div>

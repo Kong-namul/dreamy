@@ -9,6 +9,8 @@ import { useDreamStore } from '@/store/dreamStore'
 import { useState, useEffect } from 'react'
 import { DreamComment } from '@/types'
 import { useLocalizedComment } from '@/lib/translateComment'
+import { useT, t as tt } from '@/lib/i18n'
+import { useLocalizedDream } from '@/lib/translateDream'
 
 /**
  * 모달이 열린 동안 body 스크롤 잠금. 여러 모달이 동시에 열려도 카운터로 안전하게 처리.
@@ -272,7 +274,7 @@ function DetailBody({ entry }: { entry: DetailEntry }) {
             userSelect: 'none',
             padding: '8px 4px',
           }}>
-            내가 쓴 원문 보기
+            {tt('detail.original')}
           </summary>
           <div
             style={{
@@ -349,12 +351,12 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
       }}
     >
       <p style={{ fontSize: 12, fontWeight: 700, color: '#E8E8F4', letterSpacing: 0.5 }}>
-        오늘의 길잡이
+        {tt('detail.lucky.title')}
       </p>
 
       {/* 가지고 다닐 것 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>가지고 다니면 좋은 것</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{tt('detail.lucky.item')}</p>
         <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <p style={{ fontSize: 14, color: '#E8E8F4', fontWeight: 500 }}>{lucky.item}</p>
         </div>
@@ -362,7 +364,7 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
 
       {/* 색상 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>행운 컬러</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{tt('detail.lucky.color')}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div
             style={{
@@ -385,7 +387,7 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
       {/* 피해야 할 것 */}
       {lucky.avoid && lucky.avoid.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>오늘 피하면 좋은 것</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{tt('detail.lucky.avoid')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {lucky.avoid.map((item, i) => (
               <div
@@ -412,13 +414,13 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
         <div style={{ display: 'grid', gridTemplateColumns: lucky.luckyDirection && lucky.luckyNumber != null ? '1fr 1fr' : '1fr', gap: 10 }}>
           {lucky.luckyDirection && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>행운의 방향</p>
+              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>{tt('detail.lucky.direction')}</p>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>{lucky.luckyDirection}</p>
             </div>
           )}
           {lucky.luckyNumber != null && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>행운의 숫자</p>
+              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>{tt('detail.lucky.number')}</p>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>{lucky.luckyNumber}</p>
             </div>
           )}
@@ -741,7 +743,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 4 }}>
       <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>
-        댓글 {comments.length > 0 ? `· ${comments.length}` : ''}
+        {tt('detail.commentsLabel')} {comments.length > 0 ? `· ${comments.length}` : ''}
       </p>
 
       {comments.length > 0 ? (
@@ -801,7 +803,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
           })}
         </div>
       ) : (
-        <p style={{ fontSize: 12, color: '#555E80' }}>아직 댓글이 없어요. 첫 공감을 남겨보세요.</p>
+        <p style={{ fontSize: 12, color: '#555E80' }}>{tt('detail.commentsEmpty')}</p>
       )}
     </section>
   )
@@ -849,7 +851,7 @@ function CommentInputFooter({ entry }: { entry: DetailEntry }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
-        placeholder="따뜻한 공감 한마디를 남겨보세요"
+        placeholder={tt('detail.commentPlaceholder')}
         style={{
           flex: 1,
           padding: '10px 14px',
@@ -876,7 +878,7 @@ function CommentInputFooter({ entry }: { entry: DetailEntry }) {
           opacity: text.trim() ? 1 : 0.5,
         }}
       >
-        등록
+        {tt('detail.commentSend')}
       </button>
     </div>
   )

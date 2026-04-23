@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { DreamEntry } from '@/types'
 import { useDreamStore } from '@/store/dreamStore'
 import { SaveIcon, SunIcon, DiamondIcon } from '@/components/ui/Icons'
+import { useT } from '@/lib/i18n'
 
 const STICKERS = ['🌲', '🗝️', '💭', '💝', '🌟']
 const ROTATIONS = [-2, 1.5, -1, 2, -1.5]
@@ -52,6 +53,7 @@ export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fo
   const { spendCredits, setCredits, setCreditModalOpen } = useDreamStore()
   const [visibleCount, setVisibleCount] = useState(0)
   const [saved, setSaved] = useState(false)
+  const t = useT()
 
   useEffect(() => {
     if (!entry.pages) return
@@ -113,7 +115,7 @@ export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fo
             }}
           >
             <SaveIcon size={15} />
-            {saved ? '저장 완료' : '일기장 저장'}
+            {saved ? t('detail.saved') : t('detail.saveToDiary')}
           </button>
           {!fortuneText && (
             <button
@@ -122,7 +124,7 @@ export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fo
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold"
               style={{ background: 'rgba(245,215,139,0.1)', border: '1px solid rgba(245,215,139,0.22)', color: '#F5D78B' }}
             >
-              {fortuneLoading ? '불러오는 중...' : <><SunIcon size={15} /><span>오늘의 운세</span><span className="flex items-center gap-0.5 opacity-70"><DiamondIcon size={10} />3</span></>}
+              {fortuneLoading ? t('detail.fortuneLoading') : <><SunIcon size={15} /><span>{t('detail.fortune')}</span><span className="flex items-center gap-0.5 opacity-70"><DiamondIcon size={10} />3</span></>}
             </button>
           )}
         </motion.div>
@@ -137,7 +139,7 @@ export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fo
         >
           <div className="flex items-center gap-1.5 mb-1">
             <SunIcon size={13} style={{ color: '#F5D78B' }} />
-            <p className="text-xs font-semibold" style={{ color: '#F5D78B' }}>오늘의 운세</p>
+            <p className="text-xs font-semibold" style={{ color: '#F5D78B' }}>{t('detail.fortune')}</p>
           </div>
           <p className="text-sm leading-6" style={{ color: '#E8D5A0' }}>{fortuneText}</p>
         </motion.div>

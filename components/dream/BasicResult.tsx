@@ -4,6 +4,7 @@ import { useDreamStore } from '@/store/dreamStore'
 import { DreamEntry } from '@/types'
 import { useState } from 'react'
 import { SparkleIcon, SaveIcon, SunIcon, DiamondIcon } from '@/components/ui/Icons'
+import { useT } from '@/lib/i18n'
 
 interface Props {
   entry: DreamEntry
@@ -16,6 +17,7 @@ interface Props {
 export default function BasicResult({ entry, onSave, onFortune, fortuneText, fortuneLoading }: Props) {
   const { spendCredits, setCredits, setCreditModalOpen } = useDreamStore()
   const [saved, setSaved] = useState(false)
+  const t = useT()
 
   const handleSave = () => { onSave(); setSaved(true) }
   const handleFortune = async () => {
@@ -59,7 +61,7 @@ export default function BasicResult({ entry, onSave, onFortune, fortuneText, for
         >
           <div className="flex items-center gap-1.5 mb-1">
             <SunIcon size={13} style={{ color: '#F5D78B' }} />
-            <p className="text-xs font-semibold" style={{ color: '#F5D78B' }}>오늘의 운세</p>
+            <p className="text-xs font-semibold" style={{ color: '#F5D78B' }}>{t('detail.fortune')}</p>
           </div>
           <p className="text-sm leading-6" style={{ color: '#E8D5A0' }}>{fortuneText}</p>
         </motion.div>
@@ -77,7 +79,7 @@ export default function BasicResult({ entry, onSave, onFortune, fortuneText, for
           }}
         >
           <SaveIcon size={15} />
-          {saved ? '저장 완료' : '일기장 저장'}
+          {saved ? t('detail.saved') : t('detail.saveToDiary')}
         </button>
 
         {!fortuneText && (
@@ -92,11 +94,11 @@ export default function BasicResult({ entry, onSave, onFortune, fortuneText, for
             }}
           >
             {fortuneLoading ? (
-              <span className="opacity-60">불러오는 중...</span>
+              <span className="opacity-60">{t('detail.fortuneLoading')}</span>
             ) : (
               <>
                 <SunIcon size={15} />
-                <span>오늘의 운세</span>
+                <span>{t('detail.fortune')}</span>
                 <span className="flex items-center gap-0.5 opacity-70"><DiamondIcon size={10} />3</span>
               </>
             )}

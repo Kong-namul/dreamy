@@ -149,15 +149,19 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'detail.fortuneLoading': { ko: '불러오는 중...', en: 'Loading…' },
   'detail.saveToDiary': { ko: '일기장 저장', en: 'Save to diary' },
   'detail.saved':       { ko: '저장됨', en: 'Saved' },
-  'detail.lucky.item':  { ko: '오늘의 행운 아이템', en: 'Lucky item today' },
-  'detail.lucky.color': { ko: '행운의 색', en: 'Lucky color' },
+  'detail.lucky.title': { ko: '오늘의 길잡이', en: "Today's guide" },
+  'detail.lucky.item':  { ko: '가지고 다니면 좋은 것', en: 'Carry with you' },
+  'detail.lucky.color': { ko: '행운 컬러', en: 'Lucky color' },
   'detail.lucky.direction': { ko: '행운의 방향', en: 'Lucky direction' },
   'detail.lucky.number': { ko: '행운의 숫자', en: 'Lucky number' },
-  'detail.lucky.avoid': { ko: '오늘 피해야 할 것', en: 'Things to avoid' },
-  'detail.original':    { ko: '원문 보기', en: 'Show original' },
+  'detail.lucky.avoid': { ko: '오늘 피하면 좋은 것', en: 'Best to avoid today' },
+  'detail.original':    { ko: '내가 쓴 원문 보기', en: 'Show my original text' },
   'detail.hideOriginal':{ ko: '원문 숨기기', en: 'Hide original' },
+  'detail.commentsEmpty': { ko: '아직 댓글이 없어요. 첫 공감을 남겨보세요.', en: 'No comments yet. Be the first to share warmth.' },
   'detail.commentPlaceholder': { ko: '따뜻한 댓글을 남겨주세요', en: 'Leave a kind comment' },
   'detail.commentSend': { ko: '등록', en: 'Post' },
+  'detail.commentsLabel': { ko: '댓글', en: 'Comments' },
+  'detail.translating':   { ko: '번역 중…', en: 'Translating…' },
 
   // Profile editor
   'profile.title':      { ko: '프로필 수정', en: 'Edit profile' },
@@ -168,6 +172,10 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'profile.customUrl':  { ko: '또는 이미지 URL 직접 입력', en: 'Or paste an image URL' },
   'profile.apply':      { ko: '적용', en: 'Apply' },
   'profile.preview':    { ko: '미리보기', en: 'Preview' },
+  'profile.defaultAvatar': { ko: '기본 아이콘', en: 'Default icon' },
+  'profile.errEmpty':   { ko: '닉네임을 입력해주세요', en: 'Please enter a nickname' },
+  'profile.errLen':     { ko: '12자 이내로 입력해주세요', en: 'Must be 12 characters or fewer' },
+  'profile.errTaken':   { ko: '이미 사용 중인 닉네임이에요', en: 'That nickname is taken' },
 
   // Withdraw modal
   'withdraw.title':     { ko: '정말 탈퇴하시겠어요?', en: 'Delete your account?' },
@@ -186,6 +194,22 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'withdraw.confirmWord': { ko: '탈퇴', en: 'DELETE' },
   'withdraw.confirm':   { ko: '탈퇴 확정', en: 'Confirm deletion' },
   'withdraw.processing':{ ko: '처리 중...', en: 'Processing…' },
+
+  // Onboarding slides
+  'onboard.record.title':    { ko: '오늘 꾼 꿈,\n기억하고 싶지 않으세요?',
+                               en: "Don't want tonight's\ndream to fade away?" },
+  'onboard.record.desc':     { ko: '매일 아침 흐릿해지는 꿈을\nDreamy가 기록해드려요.',
+                               en: 'Dreamy captures it before\nthe morning blurs everything.' },
+  'onboard.interpret.title': { ko: 'AI가 당신의 꿈을\n따뜻하게 해석해요',
+                               en: 'Warm AI interpretations\ntailored to you' },
+  'onboard.interpret.desc':  { ko: '상징과 무의식을 분석해\n3~4문장의 맞춤 해석을 드려요.',
+                               en: 'Symbols and subconscious cues\nturned into a few thoughtful lines.' },
+  'onboard.diary.title':     { ko: '그림일기로\n꿈을 아름답게 기록해요',
+                               en: 'Turn dreams into\na 5-page picture diary' },
+  'onboard.diary.desc':      { ko: '5페이지 손그림 일기로 꿈의\n이야기를 펼쳐보세요.',
+                               en: 'Unfold the story of your dream\nin five illustrated pages.' },
+  'onboard.next':            { ko: '다음', en: 'Next' },
+  'onboard.start':           { ko: '시작하기', en: 'Get started' },
 
   // Auth screen
   'auth.subtitle':      { ko: 'AI 꿈 해석 서비스', en: 'AI dream interpretation' },

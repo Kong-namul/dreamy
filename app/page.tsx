@@ -17,6 +17,7 @@ import CreditModal from '@/components/ui/CreditModal'
 import WelcomeBonusModal from '@/components/ui/WelcomeBonusModal'
 import GlobalDreamModal from '@/components/dream/GlobalDreamModal'
 import { DEFAULT_NICKNAME } from '@/lib/nicknames'
+import { DreamEntry } from '@/types'
 import Onboarding from '@/components/onboarding/Onboarding'
 import AuthScreen from '@/components/onboarding/AuthScreen'
 import InAppBrowserGuard from '@/components/onboarding/InAppBrowserGuard'
@@ -37,7 +38,7 @@ const BG_DARK = 'linear-gradient(180deg, #010204 0%, #020608 40%, #040C18 100%)'
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer, setCredits, hydrateCreditHistory } = useDreamStore()
+  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer, setCredits, hydrateCreditHistory, dreams: localDreams, deletedDreams: localDeletedDreams } = useDreamStore()
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false)
@@ -82,15 +83,68 @@ export default function Home() {
           if (typeof user.credits === 'number') setCredits(user.credits)
         }
 
-        // 꿈 목록 서버 동기화 — 다른 기기에서도 보이게
+        // 꿈 목록 서버 동기화 — 다른 기기에서도 보이게.
+        // 기존에 서버 업로드 전 로컬에만 있던 꿈이 사라지지 않도록 backfill + merge.
         try {
           const dreamsRes = await fetch('/api/dreams')
-          if (dreamsRes.ok) {
-            const { dreams, deletedDreams } = await dreamsRes.json()
-            if (!cancelled && Array.isArray(dreams)) {
-              hydrateFromServer(dreams, Array.isArray(deletedDreams) ? deletedDreams : [])
-            }
+          if (!dreamsRes.ok) return
+          const { dreams: serverDreams, deletedDreams: serverDeleted } =
+            await dreamsRes.json() as { dreams: DreamEntry[]; deletedDreams: DreamEntry[] }
+          if (cancelled || !Array.isArray(serverDreams)) return
+
+          // 서버에 없는 로컬 전용 꿈 backfill (한 번에 대량 업로드 대신 순차 POST)
+          const serverIds = new Set(serverDreams.map((d) => d.id))
+          const serverDeletedIds = new Set((serverDeleted ?? []).map((d) => d.id))
+          const onlyLocalActive = localDreams.filter(
+            (d) => !serverIds.has(d.id) && !serverDeletedIds.has(d.id),
+          )
+          const uploaded: DreamEntry[] = []
+          for (const dream of onlyLocalActive) {
+            if (cancelled) return
+            // id 가 'local-...' 같은 임시면 서버가 uuid 재발급하니 교체되고,
+            // 이미 서버 UUID 포맷이면 서버 INSERT 실패 → 무시 (중복이거나 외부 꿈).
+            try {
+              const up = await fetch('/api/dreams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dream),
+              })
+              if (up.ok) {
+                const { dream: saved } = await up.json()
+                if (saved) uploaded.push(saved)
+              }
+            } catch { /* skip */ }
           }
+
+          // 로컬 휴지통도 동일하게 backfill (deleted 상태로)
+          // 단순 구현: 휴지통 꿈은 우선 생성 → 바로 soft delete
+          const onlyLocalDeleted = localDeletedDreams.filter(
+            (d) => !serverIds.has(d.id) && !serverDeletedIds.has(d.id),
+          )
+          const uploadedDeleted: DreamEntry[] = []
+          for (const dream of onlyLocalDeleted) {
+            if (cancelled) return
+            try {
+              const up = await fetch('/api/dreams', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dream),
+              })
+              if (up.ok) {
+                const { dream: saved } = await up.json()
+                if (saved) {
+                  await fetch(`/api/dreams/${saved.id}`, { method: 'DELETE' })
+                  uploadedDeleted.push({ ...saved, deletedAt: new Date().toISOString() })
+                }
+              }
+            } catch { /* skip */ }
+          }
+
+          if (cancelled) return
+
+          const mergedActive = [...uploaded, ...serverDreams]
+          const mergedDeleted = [...uploadedDeleted, ...(serverDeleted ?? [])]
+          hydrateFromServer(mergedActive, mergedDeleted)
         } catch { /* 네트워크 실패 시 로컬 유지 */ }
 
         // 충전 히스토리 서버 동기화

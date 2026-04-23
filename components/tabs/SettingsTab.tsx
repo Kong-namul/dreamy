@@ -243,19 +243,20 @@ function ProfileEditorModal({
   const [nickError, setNickError] = useState<string | null>(null)
   const [picked, setPicked] = useState<string | null>(currentAvatar)
   const [customInput, setCustomInput] = useState('')
+  const t = useT()
 
   const handleSave = () => {
     const trimmed = nick.trim()
     if (!trimmed) {
-      setNickError('닉네임을 입력해주세요')
+      setNickError(t('profile.errEmpty'))
       return
     }
     if (trimmed.length > 12) {
-      setNickError('12자 이내로 입력해주세요')
+      setNickError(t('profile.errLen'))
       return
     }
     if (!isNicknameAvailable(trimmed, currentNickname)) {
-      setNickError('이미 사용 중인 닉네임이에요')
+      setNickError(t('profile.errTaken'))
       return
     }
     onSave(trimmed, picked)
@@ -281,7 +282,7 @@ function ProfileEditorModal({
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <p style={{ fontSize: 16, fontWeight: 700, color: '#E8E8F4' }}>프로필 수정</p>
+          <p style={{ fontSize: 16, fontWeight: 700, color: '#E8E8F4' }}>{t('profile.title')}</p>
           <button
             onClick={onClose}
             style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(255,255,255,0.06)', border: 'none', color: '#8890B0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -295,13 +296,13 @@ function ProfileEditorModal({
           <UserAvatar nickname={nick || currentNickname} customUrl={picked} size={56} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>{nick || currentNickname}</p>
-            <p style={{ fontSize: 11, color: '#8890B0' }}>미리보기</p>
+            <p style={{ fontSize: 11, color: '#8890B0' }}>{t('profile.preview')}</p>
           </div>
         </div>
 
         {/* Nickname input */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80' }}>닉네임</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80' }}>{t('profile.nickname')}</p>
           <input
             value={nick}
             onChange={(e) => { setNick(e.target.value); setNickError(null) }}
@@ -321,13 +322,13 @@ function ProfileEditorModal({
           />
           {nickError
             ? <p style={{ fontSize: 11, color: '#E8899A' }}>{nickError}</p>
-            : <p style={{ fontSize: 11, color: '#555E80' }}>12자 이내. 바꾸면 내가 남긴 댓글도 함께 업데이트돼요.</p>
+            : <p style={{ fontSize: 11, color: '#555E80' }}>{t('profile.nicknameHint')}</p>
           }
         </div>
 
         {/* Avatar presets */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80' }}>아바타</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80' }}>{t('profile.avatar')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
             {/* 기본 아이콘 */}
             <button
@@ -342,7 +343,7 @@ function ProfileEditorModal({
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: 0,
               }}
-              aria-label="기본 아이콘"
+              aria-label={t('profile.defaultAvatar')}
             >
               <PersonIcon size={24} />
             </button>
@@ -370,7 +371,7 @@ function ProfileEditorModal({
 
         {/* URL 직접 입력 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80' }}>또는 이미지 URL 직접 입력</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80' }}>{t('profile.customUrl')}</p>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               value={customInput}
@@ -398,7 +399,7 @@ function ProfileEditorModal({
                 cursor: customInput.trim() ? 'pointer' : 'not-allowed',
               }}
             >
-              적용
+              {t('profile.apply')}
             </button>
           </div>
         </div>
@@ -414,7 +415,7 @@ function ProfileEditorModal({
               fontSize: 13, fontWeight: 600, cursor: 'pointer',
             }}
           >
-            취소
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
@@ -425,7 +426,7 @@ function ProfileEditorModal({
               fontSize: 13, fontWeight: 700, cursor: 'pointer',
             }}
           >
-            저장
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -477,7 +478,8 @@ function WithdrawConfirmModal({
 }) {
   const [step, setStep] = useState<1 | 2>(1)
   const [typed, setTyped] = useState('')
-  const CONFIRM_WORD = '탈퇴'
+  const t = useT()
+  const CONFIRM_WORD = t('withdraw.confirmWord')
 
   return (
     <div style={{
@@ -500,11 +502,16 @@ function WithdrawConfirmModal({
       >
         {step === 1 && (
           <>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>정말 탈퇴하시겠어요?</p>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>{t('withdraw.title')}</p>
             <div style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.7 }}>
-              탈퇴 시 다음 항목이 <span style={{ color: '#E8899A', fontWeight: 600 }}>모두 초기화</span>돼요:
+              {t('withdraw.intro')}
               <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {['기록한 꿈 전체', '보유 크레딧 및 충전 내역', '닉네임·아바타·프로필', '내가 단 댓글'].map((item) => (
+                {[
+                  t('withdraw.item.dreams'),
+                  t('withdraw.item.credits'),
+                  t('withdraw.item.profile'),
+                  t('withdraw.item.comments'),
+                ].map((item) => (
                   <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                     <span style={{ color: '#C4C0F5', flexShrink: 0, lineHeight: 1.7 }}>•</span>
                     <span>{item}</span>
@@ -512,7 +519,7 @@ function WithdrawConfirmModal({
                 ))}
               </div>
               <p style={{ marginTop: 10, fontSize: 12, color: '#555E80' }}>
-                동일한 구글 계정으로 다시 로그인해도 <strong style={{ color: '#8890B0' }}>새 계정으로 시작</strong>되며 이전 기록은 복구되지 않아요.
+                {t('withdraw.footnote')}
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
@@ -526,7 +533,7 @@ function WithdrawConfirmModal({
                   fontSize: 13, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer',
                 }}
               >
-                취소
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => setStep(2)}
@@ -538,7 +545,7 @@ function WithdrawConfirmModal({
                   fontSize: 13, fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer',
                 }}
               >
-                계속 진행
+                {t('withdraw.continue')}
               </button>
             </div>
           </>
@@ -546,14 +553,14 @@ function WithdrawConfirmModal({
 
         {step === 2 && (
           <>
-            <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>마지막 확인</p>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>{t('withdraw.finalTitle')}</p>
             <p style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.6 }}>
-              계속하려면 아래 칸에 <span style={{ color: '#E8899A', fontWeight: 700 }}>&quot;탈퇴&quot;</span> 두 글자를 입력해주세요. 이 작업은 되돌릴 수 없어요.
+              {t('withdraw.finalBody')}
             </p>
             <input
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
-              placeholder="탈퇴"
+              placeholder={CONFIRM_WORD}
               autoFocus
               disabled={busy}
               style={{
@@ -574,7 +581,7 @@ function WithdrawConfirmModal({
                   fontSize: 13, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer',
                 }}
               >
-                뒤로
+                {t('common.back')}
               </button>
               <button
                 onClick={onConfirm}
@@ -588,7 +595,7 @@ function WithdrawConfirmModal({
                   cursor: (busy || typed !== CONFIRM_WORD) ? 'not-allowed' : 'pointer',
                 }}
               >
-                {busy ? '처리 중...' : '탈퇴 확정'}
+                {busy ? t('withdraw.processing') : t('withdraw.confirm')}
               </button>
             </div>
           </>
