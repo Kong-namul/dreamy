@@ -62,7 +62,8 @@ export default function SettingsTab() {
       }
       // 1) 로컬 상태 초기화 (dreams/credits/history/nickname/avatar/comments)
       resetAll()
-      // 2) 온보딩/welcome-bonus 플래그도 지움 → 재로그인 시 신규처럼 취급
+      // 2) 온보딩·welcome-bonus 플래그도 전부 지움 → 재로그인 시 온보딩부터 다시 시작
+      localStorage.removeItem('dreamy_onboarded')
       if (session?.user?.email) {
         localStorage.removeItem(`dreamy_welcome_bonus_${session.user.email}`)
       }
