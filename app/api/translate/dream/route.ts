@@ -1,10 +1,9 @@
 /**
  * POST /api/translate/dream
- * body: { dreamId: string, locale: 'en' }
+ * body: { dreamId: string, locale: 'ko' | 'en' }
  *
- * 원본이 한국어로 저장된 꿈을 요청한 locale 로 번역.
- * 이미 DB 에 캐시된 번역이 있으면 Claude 호출 없이 반환.
- * 처음 번역한 경우 Anthropic 호출 후 dreams.translations JSONB 에 저장.
+ * 꿈을 요청한 locale 로 번역. 원본이 이미 해당 언어면 그대로 반환 (캐시 기록 안함).
+ * 그렇지 않으면 dreams.translations[locale] 캐시 또는 Claude 호출 후 캐시.
  *
  * 번역 대상 필드:
  *   dream, interpretation, weather,
@@ -27,6 +26,7 @@ type DreamRow = {
   interpretation_blocks: unknown
   lucky: unknown
   translations: Record<string, unknown> | null
+  source_locale: string | null
 }
 
 export async function POST(req: Request) {
@@ -42,26 +42,26 @@ export async function POST(req: Request) {
 
   const dreamId = body.dreamId
   const locale = body.locale
-  if (!dreamId || locale !== 'en') {
-    return NextResponse.json({ error: 'dreamId and locale=en required' }, { status: 400 })
+  if (!dreamId || (locale !== 'en' && locale !== 'ko')) {
+    return NextResponse.json({ error: 'dreamId and locale (ko|en) required' }, { status: 400 })
   }
 
   const supa = supabaseServer()
 
-  // 본인 꿈인지 확인
-  const { data: user } = await supa
-    .from('users').select('id').eq('email', email).is('deleted_at', null).maybeSingle()
-  if (!user) return NextResponse.json({ error: 'no user' }, { status: 404 })
-
   const { data: dream, error } = await supa
     .from('dreams')
-    .select('id, user_id, dream, interpretation, weather, pages, interpretation_blocks, lucky, translations')
+    .select('id, user_id, dream, interpretation, weather, pages, interpretation_blocks, lucky, translations, source_locale')
     .eq('id', dreamId)
     .maybeSingle()
   if (error || !dream) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   const d = dream as DreamRow
-  // 드림피드 공개 꿈도 번역 가능해야 하므로 owner check 는 하지 않음
+  const source = d.source_locale ?? 'ko'
+
+  // 요청 언어가 원본과 같으면 번역 불필요 → 원본 반환
+  if (source === locale) {
+    return NextResponse.json({ translation: null, sameAsSource: true })
+  }
 
   // 캐시 히트
   if (d.translations && d.translations[locale]) {
@@ -80,12 +80,16 @@ export async function POST(req: Request) {
 
   const anthropic = new Anthropic({ apiKey })
 
-  const systemPrompt = `You translate Korean dream-journal content into natural, warm English for the Dreamy app.
-- Preserve the tone: friendly, gentle, slightly poetic.
+  const sourceName = source === 'en' ? 'English' : 'Korean'
+  const targetName = locale === 'en' ? 'English' : 'Korean'
+  const toneHint = locale === 'en'
+    ? 'friendly, gentle, slightly poetic English. Pages use casual narration ("I was…"); interpretationBlocks use polite warm prose.'
+    : '따뜻하고 약간 시적인 한국어. pages 는 반말 친근체(\"~이었어\"), interpretationBlocks 는 존댓말(\"~예요\").'
+
+  const systemPrompt = `You translate dream-journal content from ${sourceName} to ${targetName} for the Dreamy app.
+- Tone: ${toneHint}
 - Keep emojis and markdown (**bold**) intact.
-- Translate 'pages[*].text' in casual English (like "I was..." / "It felt...").
-- Translate 'interpretationBlocks[*].body' in polite warm English.
-- Keep culturally-specific references intact but add light context if helpful.
+- Keep culturally-specific references; add light context if helpful.
 - Return ONLY a JSON object with the same shape as the input, all text fields translated.
 - Empty strings or null fields stay empty/null.`
 
@@ -97,7 +101,7 @@ export async function POST(req: Request) {
       system: systemPrompt,
       messages: [{
         role: 'user',
-        content: `Translate this Korean dream content to English. Return ONLY the JSON object, no prose.\n\n${JSON.stringify(payload, null, 2)}`,
+        content: `Translate this ${sourceName} dream content to ${targetName}. Return ONLY the JSON object, no prose.\n\n${JSON.stringify(payload, null, 2)}`,
       }],
     })
 
@@ -105,7 +109,6 @@ export async function POST(req: Request) {
       .filter((c): c is Anthropic.TextBlock => c.type === 'text')
       .map((c) => c.text).join('\n').trim()
 
-    // strip ```json fences if any
     const jsonStr = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '')
     translated = JSON.parse(jsonStr)
   } catch (err) {
@@ -115,7 +118,6 @@ export async function POST(req: Request) {
     )
   }
 
-  // DB 캐시 저장 (기존 translations 에 머지)
   const prev = (d.translations ?? {}) as Record<string, unknown>
   const next = { ...prev, [locale]: translated }
   await supa.from('dreams').update({ translations: next }).eq('id', dreamId)

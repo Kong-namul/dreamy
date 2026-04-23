@@ -16,19 +16,20 @@ export async function GET(_: NextRequest, ctx: { params: Promise<{ id: string }>
 
   const { data, error } = await supa
     .from('dream_comments')
-    .select('id, author_name, author_initial, text, created_at')
+    .select('id, author_name, author_initial, text, created_at, source_locale, translations')
     .eq('dream_id', id)
     .order('created_at', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // 클라이언트 타입에 맞게 리맵
   const comments = (data ?? []).map((c) => ({
     id: c.id,
     authorName: c.author_name,
     authorInitial: c.author_initial,
     text: c.text,
     date: c.created_at,
+    sourceLocale: (c.source_locale === 'en' ? 'en' : 'ko') as 'ko' | 'en',
+    translations: (c.translations as Record<string, string> | null) ?? undefined,
   }))
   return NextResponse.json({ comments })
 }
@@ -39,11 +40,12 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   const email = session?.user?.email
   if (!email) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  let body: { text?: string } = {}
+  let body: { text?: string; sourceLocale?: 'ko' | 'en' } = {}
   try { body = await req.json() } catch {}
   const text = body.text?.trim()
   if (!text) return NextResponse.json({ error: 'text required' }, { status: 400 })
   if (text.length > 500) return NextResponse.json({ error: 'text too long' }, { status: 400 })
+  const sourceLocale = body.sourceLocale === 'en' ? 'en' : 'ko'
 
   const supa = supabaseServer()
 
@@ -73,8 +75,9 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       author_name: authorName,
       author_initial: authorInitial,
       text,
+      source_locale: sourceLocale,
     })
-    .select('id, author_name, author_initial, text, created_at')
+    .select('id, author_name, author_initial, text, created_at, source_locale')
     .single()
 
   if (error || !data) return NextResponse.json({ error: error?.message ?? 'insert failed' }, { status: 500 })
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
       authorInitial: data.author_initial,
       text: data.text,
       date: data.created_at,
+      sourceLocale: (data.source_locale === 'en' ? 'en' : 'ko') as 'ko' | 'en',
     },
   })
 }

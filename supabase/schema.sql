@@ -50,6 +50,7 @@ create table if not exists public.dreams (
   lucky                   jsonb,
   shared                  boolean not null default false,
   translations            jsonb,                       -- locale 별 번역 캐시 (ex. { en: {...} })
+  source_locale           text not null default 'ko',  -- 작성 시점의 언어
   created_at              timestamptz not null default now(),
   deleted_at              timestamptz
 );
@@ -88,6 +89,8 @@ create table if not exists public.dream_comments (
   author_name     text not null,
   author_initial  text not null,
   text            text not null,
+  translations    jsonb,                        -- locale 별 번역 캐시 (예: { en: '...' })
+  source_locale   text not null default 'ko',
   created_at      timestamptz not null default now()
 );
 

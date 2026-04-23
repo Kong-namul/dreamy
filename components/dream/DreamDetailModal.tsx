@@ -8,6 +8,7 @@ import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspi
 import { useDreamStore } from '@/store/dreamStore'
 import { useState, useEffect } from 'react'
 import { DreamComment } from '@/types'
+import { useLocalizedComment } from '@/lib/translateComment'
 
 /**
  * 모달이 열린 동안 body 스크롤 잠금. 여러 모달이 동시에 열려도 카운터로 안전하게 처리.
@@ -707,6 +708,21 @@ function DiaryPageCard({ page, index, total }: {
 }
 
 /**
+ * 개별 댓글 본문 — 현재 locale 로 번역 표시.
+ */
+function CommentBody({ comment }: { comment: DreamComment }) {
+  const { text, translating } = useLocalizedComment(comment)
+  return (
+    <p style={{ fontSize: 13, lineHeight: '20px', color: '#C0C4DC' }}>
+      {text}
+      {translating && (
+        <span style={{ marginLeft: 6, fontSize: 10, color: '#8890B0' }}>• 번역 중…</span>
+      )}
+    </p>
+  )
+}
+
+/**
  * 댓글 목록 — 스크롤 영역에 들어감 (입력폼 없음)
  */
 function CommentList({ entry }: { entry: DetailEntry }) {
@@ -752,7 +768,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
                       {new Date(c.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
-                  <p style={{ fontSize: 13, lineHeight: '20px', color: '#C0C4DC' }}>{c.text}</p>
+                  <CommentBody comment={c} />
                 </div>
                 {mine && (
                   <button
@@ -795,28 +811,27 @@ function CommentList({ entry }: { entry: DetailEntry }) {
  * 댓글 입력 — 모달 하단 고정 푸터
  */
 function CommentInputFooter({ entry }: { entry: DetailEntry }) {
-  const { addComment, nickname } = useDreamStore()
+  const { addComment, nickname, locale } = useDreamStore()
   const [text, setText] = useState('')
 
   const handleSubmit = async () => {
     if (!text.trim()) return
     const body = text.trim()
-    // 낙관적 UI — 먼저 로컬에 추가
     const tempComment: DreamComment = {
       id: `c-${Date.now()}`,
       authorName: nickname,
       authorInitial: nickname.charAt(0),
       text: body,
       date: new Date().toISOString(),
+      sourceLocale: locale,
     }
     addComment(entry.id, tempComment)
     setText('')
-    // 서버 저장 (실패해도 로컬은 남김)
     try {
       await fetch(`/api/dreams/${entry.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: body }),
+        body: JSON.stringify({ text: body, sourceLocale: locale }),
       })
     } catch { /* silent */ }
   }

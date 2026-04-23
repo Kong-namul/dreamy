@@ -74,7 +74,7 @@ async function runInterpret(type: 'basic' | 'premium') {
     })
     const data = await res.json()
 
-    const entry: Partial<DreamEntry> = {
+    const entry: Partial<DreamEntry> & { sourceLocale?: 'ko' | 'en' } = {
       dream: draft.dream,
       interpretation: data.interpretation ?? '',
       moods: (draft.moods.length > 0 ? draft.moods : (data.moods ?? [])) as Mood[],
@@ -85,6 +85,7 @@ async function runInterpret(type: 'basic' | 'premium') {
       interpretationBlocks: data.interpretationBlocks,
       lucky: data.lucky,
       shared: false,
+      sourceLocale: useDreamStore.getState().locale,
     }
 
     // 서버에 저장해 서버 생성 id 받아오기 (다른 기기에서도 보이려면 필수)

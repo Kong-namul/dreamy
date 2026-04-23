@@ -25,9 +25,10 @@ type DbDream = {
   created_at: string
   deleted_at: string | null
   translations: Record<string, unknown> | null
+  source_locale: string | null
 }
 
-function toClient(d: DbDream): DreamEntry & { deletedAt?: string | null; translations?: Record<string, unknown> | null } {
+function toClient(d: DbDream): DreamEntry & { deletedAt?: string | null } {
   return {
     id: d.id,
     dream: d.dream,
@@ -43,6 +44,7 @@ function toClient(d: DbDream): DreamEntry & { deletedAt?: string | null; transla
     date: d.created_at,
     deletedAt: d.deleted_at,
     translations: d.translations,
+    sourceLocale: (d.source_locale === 'en' ? 'en' : 'ko'),
   }
 }
 
@@ -68,7 +70,7 @@ export async function GET() {
   const supa = supabaseServer()
   const { data, error } = await supa
     .from('dreams')
-    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations')
+    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations, source_locale')
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
@@ -89,7 +91,7 @@ export async function POST(req: Request) {
   const userId = await getActiveUserId(email)
   if (!userId) return NextResponse.json({ error: 'no user' }, { status: 404 })
 
-  let body: Partial<DreamEntry>
+  let body: Partial<DreamEntry> & { sourceLocale?: 'ko' | 'en' }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }
 
   if (!body.dream || !body.type) {
@@ -97,6 +99,7 @@ export async function POST(req: Request) {
   }
 
   const supa = supabaseServer()
+  const sourceLocale = body.sourceLocale === 'en' ? 'en' : 'ko'
   const { data, error } = await supa
     .from('dreams')
     .insert({
@@ -111,8 +114,9 @@ export async function POST(req: Request) {
       interpretation_blocks: body.interpretationBlocks ?? null,
       lucky: body.lucky ?? null,
       shared: body.shared ?? false,
+      source_locale: sourceLocale,
     })
-    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations')
+    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations, source_locale')
     .single()
 
   if (error || !data) {

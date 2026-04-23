@@ -6,6 +6,8 @@ export interface DreamComment {
   authorInitial: string
   text: string
   date: string
+  sourceLocale?: 'ko' | 'en'
+  translations?: Record<string, string> | null
 }
 
 export interface LuckyToday {
@@ -42,6 +44,8 @@ export interface DreamEntry {
   date: string
   shared: boolean
   comments?: DreamComment[]
+  sourceLocale?: 'ko' | 'en'              // 작성 당시 언어
+  translations?: Record<string, unknown> | null  // 언어별 번역 캐시
 }
 
 export interface CreditPackage {
