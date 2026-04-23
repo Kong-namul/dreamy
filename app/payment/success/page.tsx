@@ -3,15 +3,30 @@
  * /payment/success?id=<paymentId>
  * BitPay (및 기타 redirect-flow PG) 결제 완료 후 돌아오는 랜딩.
  * 서버 웹훅이 아직 안 왔을 수 있으니 상태를 폴링한다.
+ *
+ * useSearchParams 사용 컴포넌트는 반드시 Suspense boundary 안에 있어야
+ * Next.js App Router prerender 단계에서 에러가 나지 않는다.
  */
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { DiamondIcon } from '@/components/ui/Icons'
 
 type Status = 'pending' | 'confirmed' | 'failed' | 'expired' | 'unknown'
 
-export default function PaymentSuccessPage() {
+const BG_STYLE: React.CSSProperties = {
+  minHeight: '100vh',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 24,
+  background: 'linear-gradient(180deg, #03050D 0%, #060C1C 50%, #0A1530 100%)',
+  color: '#E8E8F4',
+  textAlign: 'center',
+}
+
+function PaymentSuccessInner() {
   const params = useSearchParams()
   const router = useRouter()
   const paymentId = params.get('id')
@@ -52,19 +67,7 @@ export default function PaymentSuccessPage() {
   }, [paymentId])
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 24,
-        background: 'linear-gradient(180deg, #03050D 0%, #060C1C 50%, #0A1530 100%)',
-        color: '#E8E8F4',
-        textAlign: 'center',
-      }}
-    >
+    <div style={BG_STYLE}>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -153,5 +156,29 @@ export default function PaymentSuccessPage() {
         </button>
       </motion.div>
     </div>
+  )
+}
+
+function PaymentSuccessFallback() {
+  return (
+    <div style={BG_STYLE}>
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 2, ease: 'linear', repeat: Infinity }}
+        style={{
+          width: 48, height: 48, borderRadius: '50%',
+          border: '3px solid rgba(127,119,221,0.3)',
+          borderTopColor: '#C4C0F5',
+        }}
+      />
+    </div>
+  )
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<PaymentSuccessFallback />}>
+      <PaymentSuccessInner />
+    </Suspense>
   )
 }
