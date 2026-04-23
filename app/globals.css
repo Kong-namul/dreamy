@@ -75,6 +75,12 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* MyDiary 진행 중 스켈레톤 텍스트 라인용 shimmer */
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 /* Glow effects */
 .glow-purple {
   box-shadow: 0 0 20px rgba(127, 119, 221, 0.35);

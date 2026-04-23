@@ -8,6 +8,21 @@ import DreamDetailModal, { DetailEntry } from '@/components/dream/DreamDetailMod
 import MoodPill from '@/components/ui/MoodPill'
 import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspice'
 
+function SkeletonLine({ width }: { width: string }) {
+  return (
+    <div
+      style={{
+        width,
+        height: 10,
+        borderRadius: 999,
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.05), rgba(127,119,221,0.12), rgba(255,255,255,0.05))',
+        backgroundSize: '200% 100%',
+        animation: 'skeleton-shimmer 1.6s ease-in-out infinite',
+      }}
+    />
+  )
+}
+
 const CLAMP2: React.CSSProperties = {
   display: '-webkit-box',
   WebkitLineClamp: 2,
@@ -140,7 +155,7 @@ function DreamCard({ entry, index, onClick, onToggleShared, onDelete }: {
 }
 
 export default function MyDiaryTab() {
-  const { dreams, nickname, setShared, softDeleteDream, setActiveTab } = useDreamStore()
+  const { dreams, nickname, setShared, softDeleteDream, setActiveTab, interpretJob } = useDreamStore()
   const [selected, setSelected] = useState<DetailEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
@@ -167,7 +182,71 @@ export default function MyDiaryTab() {
     fetch(`/api/dreams/${id}`, { method: 'DELETE' }).catch(() => {})
   }
 
-  if (dreams.length === 0) {
+  // 꿈 해석이 진행 중일 때 목록 최상단에 보여줄 스켈레톤 카드.
+  const pendingSkeleton = interpretJob ? (
+    <motion.div
+      key="pending-skeleton"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      style={{
+        background: 'rgba(127,119,221,0.08)',
+        border: '1px solid rgba(127,119,221,0.35)',
+        borderRadius: 20,
+        padding: 18,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14,
+        overflow: 'hidden',
+        position: 'relative',
+      }}
+    >
+      {/* shimmer bar */}
+      <motion.div
+        aria-hidden
+        animate={{ x: ['-100%', '200%'] }}
+        transition={{ duration: 1.8, ease: 'easeInOut', repeat: Infinity }}
+        style={{
+          position: 'absolute',
+          top: 0, bottom: 0, width: '40%',
+          background: 'linear-gradient(90deg, transparent, rgba(196,192,245,0.12), transparent)',
+          pointerEvents: 'none',
+        }}
+      />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <span style={{ fontSize: 12, color: '#8890B0' }}>방금</span>
+        <span style={{
+          padding: '3px 10px',
+          borderRadius: 999,
+          fontSize: 10,
+          fontWeight: 700,
+          background: 'rgba(127,119,221,0.25)',
+          color: '#C4C0F5',
+          letterSpacing: 0.5,
+        }}>
+          {interpretJob.type === 'premium' ? '그림일기 작성 중' : '일기 해석 중'}
+        </span>
+      </div>
+
+      {/* skeleton text lines */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <SkeletonLine width="100%" />
+        <SkeletonLine width="86%" />
+        <SkeletonLine width="62%" />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 4 }}>
+        <motion.div
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 1.2, ease: 'easeInOut', repeat: Infinity }}
+          style={{ width: 6, height: 6, borderRadius: '50%', background: '#C4C0F5' }}
+        />
+        <p style={{ fontSize: 12, color: '#C4C0F5', fontWeight: 600 }}>{interpretJob.msg}</p>
+      </div>
+    </motion.div>
+  ) : null
+
+  if (dreams.length === 0 && !interpretJob) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '96px 0', gap: 12 }}>
         <div
@@ -216,6 +295,7 @@ export default function MyDiaryTab() {
           내 꿈은 기본 비공개예요. 공개 버튼을 누르면 드림피드에 나타나요
         </p>
       </div>
+      {pendingSkeleton}
       {dreams.map((entry, i) => (
         <DreamCard
           key={entry.id}
