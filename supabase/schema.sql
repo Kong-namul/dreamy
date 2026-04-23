@@ -94,6 +94,37 @@ create index if not exists dream_comments_dream_idx on public.dream_comments(dre
 
 
 -- ------------------------------------------------------------
+-- payments
+-- 결제 provider (base_pay / stripe / coinbase_commerce / ...) 공용 스키마.
+-- 멱등성: provider_payment_id 가 unique → webhook 재전송 시 중복 지급 방지.
+-- ------------------------------------------------------------
+create table if not exists public.payments (
+  id                     uuid primary key default uuid_generate_v4(),
+  user_id                uuid not null references public.users(id) on delete cascade,
+  package_id             text not null,              -- 'basic' | 'popular' | 'large'
+  method                 text not null check (method in (
+    'base_pay', 'stripe', 'coinbase_commerce', 'bitpay', 'binance_pay'
+  )),
+  credits                integer not null,           -- 지급 예정 크레딧 수
+  amount_usd_cents       integer,                    -- USD 결제 (base_pay / coinbase / bitpay / binance)
+  amount_krw             integer,                    -- KRW 결제 (stripe 등)
+  status                 text not null default 'pending' check (status in (
+    'pending', 'confirmed', 'failed', 'expired'
+  )),
+  provider_payment_id    text,                       -- provider 가 돌려준 결제 ID (Base Pay 의 경우 SDK id)
+  provider_tx_hash       text,                       -- 온체인 tx hash (base_pay 등)
+  confirmed_at           timestamptz,
+  created_at             timestamptz not null default now()
+);
+
+create unique index if not exists payments_provider_payment_id_uniq
+  on public.payments(method, provider_payment_id)
+  where provider_payment_id is not null;
+
+create index if not exists payments_user_idx on public.payments(user_id, created_at desc);
+
+
+-- ------------------------------------------------------------
 -- RLS: 모든 테이블에 활성화.
 -- 정책 없음 = 클라이언트(publishable key)는 아무것도 못 읽고 못 씀.
 -- 서버(secret key)가 service_role 로 bypass 하여 모든 접근을 검증 후 수행.

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useDreamStore } from '@/store/dreamStore'
 import { DiamondIcon, CloseIcon, ArrowLeftIcon, ChevronRightIcon } from '@/components/ui/Icons'
+import { pay } from '@base-org/account'
 
 interface Package {
   id: string
@@ -159,6 +160,8 @@ export default function CreditModal() {
   const { creditModalOpen, setCreditModalOpen, addCredits, setActiveTab } = useDreamStore()
   const [step, setStep] = useState<Step>('select')
   const [picked, setPicked] = useState<Package | null>(null)
+  const [payingId, setPayingId] = useState<string | null>(null)
+  const [payError, setPayError] = useState<string | null>(null)
 
   // 모달 열린 동안 body 스크롤 잠금
   useEffect(() => {
@@ -183,7 +186,7 @@ export default function CreditModal() {
     setStep('pay')
   }
 
-  const handlePay = (payment: PaymentMethod) => {
+  const handleMockPay = (payment: PaymentMethod) => {
     if (!picked) return
     addCredits(picked.credits, {
       type: 'purchase',
@@ -191,6 +194,72 @@ export default function CreditModal() {
       priceWon: picked.price,
     })
     setCreditModalOpen(false)
+  }
+
+  const handleBasePay = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('base')
+
+    const merchant = process.env.NEXT_PUBLIC_BASE_PAY_MERCHANT
+    const testnet = process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true'
+
+    if (!merchant) {
+      setPayError('Base Pay merchant 주소가 설정되지 않았어요.')
+      setPayingId(null)
+      return
+    }
+
+    // 패키지 USD 금액 (크레딧 패키지 마스터와 동일)
+    const amountUsd = picked.id === 'basic' ? '0.75'
+                    : picked.id === 'popular' ? '1.90'
+                    : '3.75'
+
+    try {
+      // Base Pay SDK — 지갑 앱이 열려 송금 확인을 받음
+      const result = await pay({
+        amount: amountUsd,
+        to: merchant,
+        testnet,
+      })
+      if (!result || !('id' in result) || !result.id) {
+        throw new Error('결제가 취소되었거나 ID를 받지 못했어요.')
+      }
+
+      // 서버 검증 → 크레딧 지급
+      const res = await fetch('/api/payment/verify-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseId: result.id, packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(body.error ?? '검증 실패')
+      }
+
+      // 성공 → 로컬 store 에도 크레딧 반영 (서버는 이미 반영함)
+      addCredits(picked.credits, {
+        type: 'purchase',
+        label: `${picked.label} 팩 · Base Pay${testnet ? ' (Testnet)' : ''}`,
+        priceWon: picked.price,
+      })
+      setCreditModalOpen(false)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      setPayError(msg)
+    } finally {
+      setPayingId(null)
+    }
+  }
+
+  const handlePay = (payment: PaymentMethod) => {
+    if (payingId) return  // 이미 진행 중이면 무시
+    if (payment.id === 'base') {
+      handleBasePay()
+      return
+    }
+    // 나머지 결제수단은 아직 프로토타입
+    handleMockPay(payment)
   }
 
   const handleViewHistory = () => {
@@ -431,42 +500,63 @@ export default function CreditModal() {
                     </p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-                      {PAYMENTS.map((pm) => (
-                        <button
-                          key={pm.id}
-                          onClick={() => handlePay(pm)}
-                          style={{
-                            width: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 12,
-                            padding: '12px 14px',
-                            borderRadius: 12,
-                            background: 'rgba(255,255,255,0.04)',
-                            border: '1px solid rgba(255,255,255,0.08)',
-                            cursor: 'pointer',
-                            transition: 'background 0.15s, border-color 0.15s',
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-                            e.currentTarget.style.borderColor = `${pm.color}88`
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
-                          }}
-                        >
-                          <PaymentLogo pm={pm} />
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>
-                              {pm.label}
-                            </span>
-                            <span style={{ fontSize: 11, color: '#8890B0' }}>{pm.sub}</span>
-                          </div>
-                          <ChevronRightIcon size={14} style={{ color: '#555E80' }} />
-                        </button>
-                      ))}
+                      {PAYMENTS.map((pm) => {
+                        const busy = payingId === pm.id
+                        const disabled = !!payingId
+                        return (
+                          <button
+                            key={pm.id}
+                            onClick={() => handlePay(pm)}
+                            disabled={disabled}
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '12px 14px',
+                              borderRadius: 12,
+                              background: 'rgba(255,255,255,0.04)',
+                              border: '1px solid rgba(255,255,255,0.08)',
+                              cursor: disabled ? 'not-allowed' : 'pointer',
+                              opacity: disabled && !busy ? 0.5 : 1,
+                              transition: 'background 0.15s, border-color 0.15s',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (disabled) return
+                              e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                              e.currentTarget.style.borderColor = `${pm.color}88`
+                            }}
+                            onMouseLeave={(e) => {
+                              if (disabled) return
+                              e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
+                              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'
+                            }}
+                          >
+                            <PaymentLogo pm={pm} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
+                              <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>
+                                {pm.label}
+                                {pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true' && (
+                                  <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#C4C0F5', background: 'rgba(127,119,221,0.18)', padding: '2px 6px', borderRadius: 999 }}>
+                                    TESTNET
+                                  </span>
+                                )}
+                              </span>
+                              <span style={{ fontSize: 11, color: '#8890B0' }}>
+                                {busy ? '지갑에서 승인 대기 중…' : pm.sub}
+                              </span>
+                            </div>
+                            <ChevronRightIcon size={14} style={{ color: '#555E80' }} />
+                          </button>
+                        )
+                      })}
                     </div>
+
+                    {payError && (
+                      <p style={{ fontSize: 12, color: '#E8899A', padding: '0 4px' }}>
+                        ⚠️ {payError}
+                      </p>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
