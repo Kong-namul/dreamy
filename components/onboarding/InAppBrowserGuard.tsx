@@ -24,6 +24,7 @@ import {
 export default function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
   const [detected, setDetected] = useState<InAppBrowser>(null)
   const [mounted, setMounted] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -38,24 +39,57 @@ export default function InAppBrowserGuard({ children }: { children: React.ReactN
   const ios = isIOS()
   const label = BROWSER_LABEL[detected]
 
-  const handleAutoOpen = () => {
-    if (detected === 'kakaotalk' && android) {
-      openInExternalKakao(currentUrl)
-      return
+  const copyToClipboard = async () => {
+    // 1) modern API
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(currentUrl)
+        return true
+      } catch { /* fall through */ }
     }
-    if (android) {
-      openInChromeAndroid(currentUrl)
-      return
-    }
-    // iOS 등은 자동 이동 불가 → 주소 복사만
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(currentUrl).catch(() => {})
+    // 2) fallback: 임시 textarea
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = currentUrl
+      ta.style.position = 'fixed'
+      ta.style.left = '-9999px'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      return true
+    } catch {
+      return false
     }
   }
 
-  const handleCopyUrl = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(currentUrl).catch(() => {})
+  const handleAutoOpen = async () => {
+    // 1) 카카오톡 Android — 공식 외부 브라우저 스킴 우선 시도
+    if (detected === 'kakaotalk' && android) {
+      openInExternalKakao(currentUrl)
+      // 스킴이 실패해도 사용자가 당황하지 않도록 주소도 미리 복사
+      await copyToClipboard()
+      return
+    }
+    // 2) 다른 안드로이드 인앱 — Chrome intent URL
+    if (android) {
+      openInChromeAndroid(currentUrl)
+      await copyToClipboard()
+      return
+    }
+    // 3) iOS 등 자동 이동 불가 — 주소 복사만
+    const ok = await copyToClipboard()
+    if (ok) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    }
+  }
+
+  const handleCopyUrl = async () => {
+    const ok = await copyToClipboard()
+    if (ok) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
     }
   }
 
