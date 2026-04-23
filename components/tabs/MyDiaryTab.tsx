@@ -149,13 +149,22 @@ export default function MyDiaryTab() {
       const ok = window.confirm('이 꿈을 드림피드에 공개할까요?\n다른 사람이 볼 수 있게 돼요.')
       if (!ok) return
     }
-    setShared(id, !current)
+    setShared(id, !current)   // 로컬 즉시 반영
+    // 서버 동기화 — 실패해도 UI 는 이미 바뀜. 롤백은 추후 재시도로 처리.
+    fetch(`/api/dreams/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shared: !current }),
+    }).catch(() => {})
   }
 
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return
-    softDeleteDream(confirmDeleteId)
+    const id = confirmDeleteId
+    softDeleteDream(id)       // 로컬 휴지통으로 이동
     setConfirmDeleteId(null)
+    // 서버 soft delete
+    fetch(`/api/dreams/${id}`, { method: 'DELETE' }).catch(() => {})
   }
 
   if (dreams.length === 0) {

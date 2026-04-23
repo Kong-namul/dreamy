@@ -20,8 +20,20 @@ export default function TrashTab() {
 
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return
-    permanentlyDeleteDream(confirmDeleteId)
+    const id = confirmDeleteId
+    permanentlyDeleteDream(id)
     setConfirmDeleteId(null)
+    // 서버 영구 삭제
+    fetch(`/api/dreams/${id}?permanent=1`, { method: 'DELETE' }).catch(() => {})
+  }
+
+  const handleRestore = (id: string) => {
+    restoreDream(id)    // 로컬 즉시 반영
+    fetch(`/api/dreams/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ restore: true }),
+    }).catch(() => {})
   }
 
   return (
@@ -57,7 +69,7 @@ export default function TrashTab() {
               key={entry.id}
               entry={entry}
               index={i}
-              onRestore={() => restoreDream(entry.id)}
+              onRestore={() => handleRestore(entry.id)}
               onDeleteRequest={() => setConfirmDeleteId(entry.id)}
             />
           ))}

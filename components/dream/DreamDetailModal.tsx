@@ -756,7 +756,10 @@ function CommentList({ entry }: { entry: DetailEntry }) {
                 </div>
                 {mine && (
                   <button
-                    onClick={() => deleteComment(entry.id, c.id)}
+                    onClick={() => {
+                      deleteComment(entry.id, c.id)
+                      fetch(`/api/dreams/${entry.id}/comments/${c.id}`, { method: 'DELETE' }).catch(() => {})
+                    }}
                     aria-label="내 댓글 삭제"
                     style={{
                       width: 22, height: 22, flexShrink: 0, alignSelf: 'flex-start',
@@ -795,17 +798,27 @@ function CommentInputFooter({ entry }: { entry: DetailEntry }) {
   const { addComment, nickname } = useDreamStore()
   const [text, setText] = useState('')
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!text.trim()) return
-    const comment: DreamComment = {
+    const body = text.trim()
+    // 낙관적 UI — 먼저 로컬에 추가
+    const tempComment: DreamComment = {
       id: `c-${Date.now()}`,
       authorName: nickname,
       authorInitial: nickname.charAt(0),
-      text: text.trim(),
+      text: body,
       date: new Date().toISOString(),
     }
-    addComment(entry.id, comment)
+    addComment(entry.id, tempComment)
     setText('')
+    // 서버 저장 (실패해도 로컬은 남김)
+    try {
+      await fetch(`/api/dreams/${entry.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: body }),
+      })
+    } catch { /* silent */ }
   }
 
   return (

@@ -1,7 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { DreamEntry, DreamComment, TabId, CreditTransaction } from '@/types'
+import { DreamEntry, DreamComment, TabId, CreditTransaction, Mood } from '@/types'
 import { inferAuspiceFromMoods } from '@/lib/auspice'
+
+// 진행 중 해석 작업 — store 레벨에 두어 탭 전환/언마운트에도 중단되지 않음.
+interface InterpretJob {
+  type: 'basic' | 'premium'
+  msg: string
+  startedAt: number
+}
 
 interface DreamStore {
   credits: number
@@ -14,6 +21,8 @@ interface DreamStore {
   deletedDreams: DreamEntry[]   // 휴지통 (소프트 삭제된 꿈)
   commentsByDreamId: Record<string, DreamComment[]>  // 꿈 ID 별 댓글 (공개 꿈 포함)
   openDreamId: string | null     // 전역 상세 모달 제어
+  interpretJob: InterpretJob | null   // 진행 중 해석 (탭 전환에도 살아남음)
+  interpretDraft: { dream: string; moods: Mood[] }  // 작성 중 꿈 본문 (탭 전환해도 유지)
 
   setCredits: (n: number) => void
   spendCredits: (n: number, label?: string) => boolean
@@ -32,6 +41,10 @@ interface DreamStore {
   restoreDream: (id: string) => void        // 휴지통 → 복구
   permanentlyDeleteDream: (id: string) => void  // 휴지통 영구 삭제
   resetAll: () => void                       // 탈퇴 시 모든 로컬 상태 초기화
+  hydrateFromServer: (dreams: DreamEntry[], deletedDreams: DreamEntry[]) => void   // 로그인 시 DB → 로컬 싱크
+  setInterpretDraft: (draft: { dream: string; moods: Mood[] }) => void
+  setInterpretJob: (job: InterpretJob | null) => void
+  updateInterpretMsg: (msg: string) => void
 }
 
 const INITIAL_STATE = {
@@ -45,6 +58,8 @@ const INITIAL_STATE = {
   deletedDreams: [] as DreamEntry[],
   commentsByDreamId: {} as Record<string, DreamComment[]>,
   openDreamId: null as string | null,
+  interpretJob: null as InterpretJob | null,
+  interpretDraft: { dream: '', moods: [] as Mood[] },
 }
 
 const welcomeBonusTx = (): CreditTransaction => ({
@@ -68,6 +83,8 @@ export const useDreamStore = create<DreamStore>()(
       deletedDreams: [],
       commentsByDreamId: {},
       openDreamId: null,
+      interpretJob: null,
+      interpretDraft: { dream: '', moods: [] },
 
       setCredits: (n) => set({ credits: n }),
       spendCredits: (n, label) => {
@@ -182,6 +199,12 @@ export const useDreamStore = create<DreamStore>()(
         // DB 에서 새 유저 row 를 만들어주면 welcome bonus 도 다시 부여됨.
         set({ ...INITIAL_STATE })
       },
+      hydrateFromServer: (dreams, deletedDreams) => {
+        set({ dreams, deletedDreams })
+      },
+      setInterpretDraft: (draft) => set({ interpretDraft: draft }),
+      setInterpretJob: (job) => set({ interpretJob: job }),
+      updateInterpretMsg: (msg: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg } } : {}),
     }),
     {
       name: 'dreamy-store',

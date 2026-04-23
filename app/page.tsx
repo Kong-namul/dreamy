@@ -37,7 +37,7 @@ const BG_DARK = 'linear-gradient(180deg, #010204 0%, #020608 40%, #040C18 100%)'
 
 export default function Home() {
   const { data: session, status } = useSession()
-  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl } = useDreamStore()
+  const { activeTab, nickname, avatarUrl, setNickname, setAvatarUrl, hydrateFromServer } = useDreamStore()
   const [onboarded, setOnboarded] = useState<boolean | null>(null)
   const [showAuth, setShowAuth] = useState(false)
   const [showWelcomeBonus, setShowWelcomeBonus] = useState(false)
@@ -76,6 +76,17 @@ export default function Home() {
           if (nickname === DEFAULT_NICKNAME) setNickname(user.nickname)
           if (!avatarUrl && user.avatar_url) setAvatarUrl(user.avatar_url)
         }
+
+        // 꿈 목록 서버 동기화 — 다른 기기에서도 보이게
+        try {
+          const dreamsRes = await fetch('/api/dreams')
+          if (dreamsRes.ok) {
+            const { dreams, deletedDreams } = await dreamsRes.json()
+            if (!cancelled && Array.isArray(dreams)) {
+              hydrateFromServer(dreams, Array.isArray(deletedDreams) ? deletedDreams : [])
+            }
+          }
+        } catch { /* 네트워크 실패 시 로컬 유지 */ }
       } catch {
         /* 네트워크 오류 시 조용히 무시 — 다음 세션에서 재시도됨 */
       }
