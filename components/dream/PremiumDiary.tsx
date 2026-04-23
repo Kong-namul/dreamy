@@ -5,6 +5,7 @@ import { DreamEntry } from '@/types'
 import { useDreamStore } from '@/store/dreamStore'
 import { SaveIcon, SunIcon, DiamondIcon } from '@/components/ui/Icons'
 import { useT } from '@/lib/i18n'
+import { formatLongDate } from '@/lib/formatDate'
 
 const STICKERS = ['🌲', '🗝️', '💭', '💝', '🌟']
 const ROTATIONS = [-2, 1.5, -1, 2, -1.5]
@@ -94,7 +95,7 @@ export default function PremiumDiary({ entry, onSave, onFortune, fortuneText, fo
         <p className="text-3xl mb-2">{entry.weather}</p>
         <p className="font-bold text-lg font-gaegu" style={{ color: '#5A3E28' }}>나의 꿈 일기</p>
         <p className="text-sm mt-1 font-gaegu" style={{ color: '#9B7A60' }}>
-          {new Date(entry.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+          {formatLongDate(entry.date)}
         </p>
       </motion.div>
 

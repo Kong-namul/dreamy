@@ -11,6 +11,7 @@ import { DreamComment } from '@/types'
 import { useLocalizedComment } from '@/lib/translateComment'
 import { useT, t as tt } from '@/lib/i18n'
 import { useLocalizedDream } from '@/lib/translateDream'
+import { formatShortDate, formatLongDate } from '@/lib/formatDate'
 
 /**
  * 모달이 열린 동안 body 스크롤 잠금. 여러 모달이 동시에 열려도 카운터로 안전하게 처리.
@@ -137,7 +138,7 @@ function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => v
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]
   const auspiceLabel = AUSPICE_LABEL[auspice]
-  const authorLabel = entry.authorName ?? (entry.isMine ? '나' : '익명')
+  const authorLabel = entry.authorName ?? (entry.isMine ? tt('detail.author.me') : tt('detail.author.anon'))
 
   return (
     <div style={{
@@ -164,7 +165,7 @@ function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => v
             border: entry.type === 'premium' ? '1px solid rgba(127,119,221,0.4)' : '1px solid rgba(196,75,114,0.35)',
             color: entry.type === 'premium' ? '#C4C0F5' : '#E8899A',
           }}>
-            {entry.type === 'premium' ? '그림일기' : '기본 해석'}
+            {entry.type === 'premium' ? tt('detail.type.premium') : tt('detail.type.basic')}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -172,7 +173,7 @@ function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => v
             {authorLabel}
           </span>
           <span style={{ fontSize: 12, color: '#555E80' }}>
-            {new Date(entry.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}
+            {formatLongDate(entry.date)}
           </span>
         </div>
       </div>
@@ -439,14 +440,21 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
  * 이 이름으로 시작하는 단락은 자동으로 볼드 소제목 + 본문으로 분리 렌더.
  */
 const CANONICAL_HEADINGS = [
+  // Korean canonical
   '상징 해석',
   '심리적 의미',
   '오늘의 조언',
-  // 레거시/변형 호환
+  // Korean legacy
   '상징 풀이',
   '심리학적 의미',
   '현재 당신의 상태',
   '한국 전통 해몽',
+  // English — Claude translates to these when locale=en
+  'Symbol reading',
+  'Symbolic reading',
+  'Psychological meaning',
+  'Today\'s advice',
+  'Advice for today',
 ]
 
 function FormattedInterpretation({ text }: { text: string }) {
@@ -767,7 +775,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: mine ? '#C4C0F5' : '#E8E8F4' }}>{c.authorName}</span>
                     <span style={{ fontSize: 10, color: '#555E80' }}>
-                      {new Date(c.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                      {formatShortDate(c.date)}
                     </span>
                   </div>
                   <CommentBody comment={c} />

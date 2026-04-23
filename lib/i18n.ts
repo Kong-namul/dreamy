@@ -78,6 +78,46 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'welcome.closing':    { ko: '을 드려요.', en: ' on us.' },
   'welcome.cta':        { ko: '기록 시작하기', en: 'Start journaling' },
 
+  // Credit packages
+  'credit.pkg.basic':   { ko: '기본', en: 'Starter' },
+  'credit.pkg.popular': { ko: '인기', en: 'Popular' },
+  'credit.pkg.large':   { ko: '대용량', en: 'Value' },
+  'credit.pkg.suffix':  { ko: '팩', en: ' pack' },
+  'credit.currency':    { ko: '크레딧', en: 'credits' },
+  'credit.walletWaiting': { ko: '지갑에서 승인 대기 중…', en: 'Waiting for wallet confirmation…' },
+  'credit.pm.coinbase.sub': { ko: '멀티체인 크립토 결제 (BTC · ETH · USDC)', en: 'Multichain crypto (BTC · ETH · USDC)' },
+  'credit.pm.base.sub':    { ko: 'Base Account · USDC 원클릭', en: 'Base Account · One-tap USDC' },
+  'credit.pm.bitpay.sub':  { ko: 'Bitcoin · Lightning · 스테이블코인', en: 'Bitcoin · Lightning · Stablecoins' },
+  'credit.pm.stripe.sub':  { ko: '카드 결제 + 크립토 온램프', en: 'Cards + crypto on-ramp' },
+  'credit.pm.binance.sub': { ko: 'Binance 지갑 P2P 결제', en: 'Binance Wallet peer-to-peer' },
+  'credit.err.cancelled':  { ko: '결제가 취소되었거나 ID를 받지 못했어요.', en: 'The payment was cancelled or no ID was returned.' },
+  'credit.err.merchant':   { ko: 'Base Pay merchant 주소가 설정되지 않았어요.', en: 'The Base Pay merchant address is not configured.' },
+  'credit.err.verify':     { ko: '검증 실패', en: 'Verification failed' },
+  'credit.err.session':    { ko: 'Stripe 세션 생성 실패', en: 'Stripe session could not be created' },
+  'credit.err.invoice':    { ko: 'invoice 생성 실패', en: 'Invoice could not be created' },
+  'credit.err.order':      { ko: 'Binance Pay 주문 생성 실패', en: 'Binance Pay order could not be created' },
+  'credit.err.noLink':     { ko: 'Binance Pay 응답에 결제 링크가 없어요', en: 'Binance Pay did not return a checkout link' },
+  'credit.err.generic':    { ko: '알 수 없는 오류', en: 'Unknown error' },
+
+  // Common dialogs
+  'dialog.shareConfirm':   { ko: '이 꿈을 드림피드에 공개할까요?\n다른 사람이 볼 수 있게 돼요.',
+                             en: 'Share this dream to the feed?\nOthers will be able to see it.' },
+  'dialog.networkError':   { ko: '네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.',
+                             en: 'Network error. Please try again in a moment.' },
+  'dialog.comingSoon':     { ko: '준비 중이에요', en: 'Coming soon' },
+
+  // Header mobile profile card
+  'header.userFallback':   { ko: '꿈꾸는 사람', en: 'Dreamer' },
+  'header.stats.dreams':   { ko: '기록한 꿈', en: 'Dreams' },
+  'header.stats.credits':  { ko: '보유 크레딧', en: 'Credits' },
+  'header.stats.dreamUnit':{ ko: '개', en: '' },
+
+  // Dream detail badges
+  'detail.author.me':      { ko: '나', en: 'Me' },
+  'detail.author.anon':    { ko: '익명', en: 'Anonymous' },
+  'detail.type.premium':   { ko: '그림일기', en: 'Picture diary' },
+  'detail.type.basic':     { ko: '기본 해석', en: 'Basic read' },
+
   // Common
   'common.cancel':      { ko: '취소', en: 'Cancel' },
   'common.save':        { ko: '저장', en: 'Save' },

@@ -73,7 +73,7 @@ export default function SettingsTab() {
       await signOut({ callbackUrl: '/' })
     } catch (err) {
       console.error(err)
-      alert('네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
+      alert(t('dialog.networkError'))
       setWithdrawing(false)
     }
   }
@@ -148,7 +148,7 @@ export default function SettingsTab() {
         <Divider />
         <MenuButton label={t('settings.menu.trash')} onClick={() => setActiveTab('trash')} />
         <Divider />
-        <MenuButton label={t('settings.menu.terms')} onClick={() => alert('준비 중이에요')} />
+        <MenuButton label={t('settings.menu.terms')} onClick={() => alert(t('dialog.comingSoon'))} />
       </div>
 
       {/* Logout */}

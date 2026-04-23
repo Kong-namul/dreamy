@@ -9,6 +9,7 @@ import MoodPill from '@/components/ui/MoodPill'
 import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspice'
 import { useLocalizedDream } from '@/lib/translateDream'
 import { useT } from '@/lib/i18n'
+import { formatShortDate } from '@/lib/formatDate'
 
 function SkeletonLine({ width }: { width: string }) {
   return (
@@ -67,7 +68,7 @@ function DreamCard({ entry: rawEntry, index, onClick, onToggleShared, onDelete }
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <span style={{ fontSize: 12, color: '#8890B0' }}>
-          {new Date(entry.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+          {formatShortDate(entry.date)}
         </span>
 
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
@@ -179,7 +180,7 @@ export default function MyDiaryTab() {
 
   const handleToggleShared = (id: string, current: boolean) => {
     if (!current) {
-      const ok = window.confirm('이 꿈을 드림피드에 공개할까요?\n다른 사람이 볼 수 있게 돼요.')
+      const ok = window.confirm(t('dialog.shareConfirm'))
       if (!ok) return
     }
     setShared(id, !current)   // 로컬 즉시 반영

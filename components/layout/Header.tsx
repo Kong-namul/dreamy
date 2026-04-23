@@ -7,6 +7,7 @@ import { useDreamStore } from '@/store/dreamStore'
 import { TabId } from '@/types'
 import { DreamyLogo, DiamondIcon, CloseIcon, PersonIcon, SwapArrowsIcon } from '@/components/ui/Icons'
 import { getAvatarAsset } from '@/lib/avatar'
+import { useT } from '@/lib/i18n'
 
 const TAB_LABELS: Record<TabId & ('new' | 'feed' | 'log'), { ko: string; en: string }> = {
   new:  { ko: '오늘의꿈', en: 'New dream' },
@@ -35,6 +36,7 @@ function InitialAvatar({ name, size = 32 }: { name?: string | null; size?: numbe
 function ProfileModal({ session, credits, onClose }: { session: Session; credits: number; onClose: () => void }) {
   const { dreams } = useDreamStore()
   const user = session.user
+  const t = useT()
   return (
     <AnimatePresence>
       <motion.div
@@ -68,7 +70,7 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
               : <InitialAvatar name={user?.name} size={64} />
             }
             <div>
-              <p className="text-lg font-bold" style={{ color: '#E8E8F4' }}>{user?.name ?? '꿈꾸는 사람'}</p>
+              <p className="text-lg font-bold" style={{ color: '#E8E8F4' }}>{user?.name ?? t('header.userFallback')}</p>
               <p className="text-sm" style={{ color: '#8890B0' }}>{user?.email ?? 'dreamer@dreamy.app'}</p>
             </div>
           </div>
@@ -76,8 +78,8 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
           {/* Stats */}
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: '기록한 꿈', value: `${dreams.length}개` },
-              { label: '보유 크레딧', value: `${credits} 💎` },
+              { label: t('header.stats.dreams'),  value: `${dreams.length}${t('header.stats.dreamUnit')}` },
+              { label: t('header.stats.credits'), value: `${credits} 💎` },
             ].map(({ label, value }) => (
               <div key={label} className="rounded-2xl p-4 text-center" style={{ background: 'rgba(127,119,221,0.1)', border: '1px solid rgba(127,119,221,0.2)' }}>
                 <p className="text-xs mb-1" style={{ color: '#8890B0' }}>{label}</p>
@@ -92,7 +94,7 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
             className="w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:brightness-110"
             style={{ background: 'rgba(196,75,114,0.15)', border: '1px solid rgba(196,75,114,0.3)', color: '#D4537E' }}
           >
-            로그아웃
+            {t('settings.logout')}
           </button>
         </motion.div>
       </motion.div>

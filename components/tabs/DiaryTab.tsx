@@ -11,6 +11,7 @@ import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspi
 import MoodPill from '@/components/ui/MoodPill'
 import { useT } from '@/lib/i18n'
 import { useLocalizedDream } from '@/lib/translateDream'
+import { formatShortDate } from '@/lib/formatDate'
 
 type FeedItem = (DreamEntry | PublicDream) & { isMine?: boolean; authorName?: string; authorInitial?: string }
 
@@ -120,7 +121,7 @@ function FeedCard({ entry: rawEntry, index, onClick, myAvatarUrl }: { entry: Fee
               {authorLabel}
             </span>
             <span style={{ fontSize: 11, color: '#555E80' }}>
-              {new Date(entry.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+              {formatShortDate(entry.date)}
             </span>
           </div>
         </div>

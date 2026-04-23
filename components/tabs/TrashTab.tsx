@@ -7,6 +7,7 @@ import { useState } from 'react'
 import MoodPill from '@/components/ui/MoodPill'
 import { useT } from '@/lib/i18n'
 import { useLocalizedDream } from '@/lib/translateDream'
+import { formatShortDate } from '@/lib/formatDate'
 
 const CARD_STYLE: React.CSSProperties = {
   background: 'rgba(17, 26, 58, 0.6)',
@@ -152,7 +153,7 @@ function TrashCard({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 11, color: '#555E80' }}>
-            {new Date(entry.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+            {formatShortDate(entry.date)}
           </span>
           {entry.moods && entry.moods.length > 0 && entry.moods.slice(0, 2).map((m) => (
             <MoodPill key={m} mood={m} size="sm" />

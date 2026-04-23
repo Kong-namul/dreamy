@@ -8,26 +8,26 @@ import { useT } from '@/lib/i18n'
 
 interface Package {
   id: string
-  label: string
+  labelKey: string
   credits: number
   price: number
   badge?: string
 }
 
 const PACKAGES: Package[] = [
-  { id: 'basic',   label: '기본',   credits: 100, price: 1000 },
-  { id: 'popular', label: '인기',   credits: 300, price: 2500, badge: 'BEST' },
-  { id: 'large',   label: '대용량', credits: 700, price: 5000 },
+  { id: 'basic',   labelKey: 'credit.pkg.basic',   credits: 100, price: 1000 },
+  { id: 'popular', labelKey: 'credit.pkg.popular', credits: 300, price: 2500, badge: 'BEST' },
+  { id: 'large',   labelKey: 'credit.pkg.large',   credits: 700, price: 5000 },
 ]
 
 interface PaymentMethod {
   id: string
   label: string
-  sub: string
+  subKey: string   // i18n key for sub-label
   color: string
   initial: string
-  logoUrl: string  // Simple Icons CDN — 흰색 SVG
-  comingSoon?: boolean   // true 면 비활성 + "준비 중" 뱃지
+  logoUrl: string
+  comingSoon?: boolean
 }
 
 // 로고 소스:
@@ -38,15 +38,15 @@ const PAYMENTS: PaymentMethod[] = [
   {
     id: 'base',
     label: 'Base Pay',
-    sub: 'Base Account · USDC 원클릭',
+    subKey: 'credit.pm.base.sub',
     color: '#0052FF',
     initial: 'B',
-    logoUrl: 'https://avatars.githubusercontent.com/u/108554348?s=64', // base-org 공식 로고
+    logoUrl: 'https://avatars.githubusercontent.com/u/108554348?s=64',
   },
   {
     id: 'coinbase',
     label: 'Coinbase Commerce',
-    sub: '멀티체인 크립토 결제 (BTC · ETH · USDC)',
+    subKey: 'credit.pm.coinbase.sub',
     color: '#1652F0',
     initial: 'C',
     logoUrl: 'https://cdn.simpleicons.org/coinbase/FFFFFF',
@@ -55,17 +55,16 @@ const PAYMENTS: PaymentMethod[] = [
   {
     id: 'bitpay',
     label: 'BitPay',
-    sub: 'Bitcoin · Lightning · 스테이블코인',
+    subKey: 'credit.pm.bitpay.sub',
     color: '#1A2A44',
     initial: 'Ƀ',
-    // BitPay 앱 아이콘 (B-only, 180x180 PNG) — bitpay.com apple-touch-icon
     logoUrl: 'https://framerusercontent.com/images/2iIIkkV5Qoskq2dfhwja8G8rFW0.png',
     comingSoon: true,
   },
   {
     id: 'stripe',
     label: 'Stripe Crypto',
-    sub: '카드 결제 + 크립토 온램프',
+    subKey: 'credit.pm.stripe.sub',
     color: '#635BFF',
     initial: 'S',
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
@@ -74,7 +73,7 @@ const PAYMENTS: PaymentMethod[] = [
   {
     id: 'binance',
     label: 'Binance Pay',
-    sub: 'Binance 지갑 P2P 결제',
+    subKey: 'credit.pm.binance.sub',
     color: '#F3BA2F',
     initial: 'ß',
     logoUrl: 'https://cdn.simpleicons.org/binance/FFFFFF',
@@ -207,7 +206,7 @@ export default function CreditModal() {
     if (!picked) return
     addCredits(picked.credits, {
       type: 'purchase',
-      label: `${picked.label} 팩 · ${payment.label}`,
+      label: `${t(picked.labelKey)}${t('credit.pkg.suffix')} · ${payment.label}`,
       priceWon: picked.price,
     })
     setCreditModalOpen(false)
@@ -222,7 +221,7 @@ export default function CreditModal() {
     const testnet = process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true'
 
     if (!merchant) {
-      setPayError('Base Pay merchant 주소가 설정되지 않았어요.')
+      setPayError(t('credit.err.merchant'))
       setPayingId(null)
       return
     }
@@ -240,7 +239,7 @@ export default function CreditModal() {
         testnet,
       })
       if (!result || !('id' in result) || !result.id) {
-        throw new Error('결제가 취소되었거나 ID를 받지 못했어요.')
+        throw new Error(t('credit.err.cancelled'))
       }
 
       // 서버 검증 → 크레딧 지급
@@ -251,18 +250,18 @@ export default function CreditModal() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {
-        throw new Error(body.error ?? '검증 실패')
+        throw new Error(body.error ?? t('credit.err.verify'))
       }
 
       // 성공 → 로컬 store 에도 크레딧 반영 (서버는 이미 반영함)
       addCredits(picked.credits, {
         type: 'purchase',
-        label: `${picked.label} 팩 · Base Pay${testnet ? ' (Testnet)' : ''}`,
+        label: `${t(picked.labelKey)}${t('credit.pkg.suffix')} · Base Pay${testnet ? ' (Testnet)' : ''}`,
         priceWon: picked.price,
       })
       setCreditModalOpen(false)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
     } finally {
       setPayingId(null)
@@ -281,11 +280,11 @@ export default function CreditModal() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok || !body.checkoutUrl) {
-        throw new Error(body.error ?? 'Stripe 세션 생성 실패')
+        throw new Error(body.error ?? t('credit.err.session'))
       }
       window.location.href = body.checkoutUrl
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
       setPayingId(null)
     }
@@ -303,16 +302,16 @@ export default function CreditModal() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok) {
-        throw new Error(body.error ?? 'Binance Pay 주문 생성 실패')
+        throw new Error(body.error ?? t('credit.err.order'))
       }
       // 모바일: deeplink / 데스크톱: checkoutUrl (or QR). 일단 checkoutUrl 우선.
       const target = body.checkoutUrl ?? body.universalUrl ?? body.deeplink ?? body.qrCodeLink
       if (!target) {
-        throw new Error('Binance Pay 응답에 결제 링크가 없어요')
+        throw new Error(t('credit.err.noLink'))
       }
       window.location.href = target
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
       setPayingId(null)
     }
@@ -330,12 +329,12 @@ export default function CreditModal() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok || !body.checkoutUrl) {
-        throw new Error(body.error ?? 'invoice 생성 실패')
+        throw new Error(body.error ?? t('credit.err.invoice'))
       }
       // BitPay 호스팅 체크아웃으로 리다이렉트 — 결제 완료 시 /payment/success 로 복귀
       window.location.href = body.checkoutUrl
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
       setPayingId(null)
     }
@@ -570,7 +569,7 @@ export default function CreditModal() {
                                   </span>
                                 )}
                               </div>
-                              <span style={{ fontSize: 12, color: '#8890B0' }}>{pkg.label}</span>
+                              <span style={{ fontSize: 12, color: '#8890B0' }}>{t(pkg.labelKey)}</span>
                             </div>
                           </div>
                           <span style={{ fontSize: 14, fontWeight: 600, color: '#C4C0F5' }}>
@@ -627,9 +626,9 @@ export default function CreditModal() {
                           <DiamondIcon size={18} style={{ color: '#9D96F0' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: 15, fontWeight: 700, color: '#E8E8F4' }}>
-                              {picked.credits.toLocaleString()} {t('welcome.credits').includes('credits') ? 'credits' : '크레딧'}
+                              {picked.credits.toLocaleString()} {t('credit.currency')}
                             </span>
-                            <span style={{ fontSize: 11, color: '#8890B0' }}>{picked.label} 팩</span>
+                            <span style={{ fontSize: 11, color: '#8890B0' }}>{t(picked.labelKey)}{t('credit.pkg.suffix')}</span>
                           </div>
                         </div>
                         <span style={{ fontSize: 15, fontWeight: 700, color: '#C4C0F5' }}>
@@ -694,7 +693,7 @@ export default function CreditModal() {
                                 )}
                               </span>
                               <span style={{ fontSize: 11, color: '#8890B0' }}>
-                                {busy ? '지갑에서 승인 대기 중…' : pm.sub}
+                                {busy ? t('credit.walletWaiting') : t(pm.subKey)}
                               </span>
                             </div>
                             <ChevronRightIcon size={14} style={{ color: '#555E80' }} />
