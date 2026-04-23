@@ -77,16 +77,38 @@ export async function POST(req: Request) {
   }
 
   const d = (dream ?? null) as DreamRow | null
-  const source = (d?.source_locale ?? body.content?.sourceLocale ?? 'ko') as 'ko' | 'en'
+
+  // source_locale 태그가 실제 본문 언어와 다른 경우 (예: 영어 UI 에서 한국어로 작성하며 태그가 'en' 으로 붙음)
+  // 본문의 한글 비율로 실제 언어를 감지하고 태그보다 우선. 그렇지 않으면
+  // "sameAsSource" 로 오판해 원문 한글이 그대로 영어권 사용자에게 노출됨.
+  const actualText = (d?.dream ?? body.content?.dream ?? '') as string
+  const tagged = (d?.source_locale ?? body.content?.sourceLocale ?? 'ko') as 'ko' | 'en'
+  const detected: 'ko' | 'en' = (() => {
+    if (!actualText) return tagged
+    let hangul = 0, latin = 0
+    for (const ch of actualText) {
+      const code = ch.codePointAt(0)!
+      if (code >= 0xac00 && code <= 0xd7a3) hangul++
+      else if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) latin++
+    }
+    const total = hangul + latin
+    if (total === 0) return tagged
+    return hangul / total >= 0.2 ? 'ko' : 'en'
+  })()
+  const source: 'ko' | 'en' = tagged === detected ? tagged : detected
 
   // 요청 언어가 원본과 같으면 번역 불필요 → 원본 반환
   if (source === locale) {
     return NextResponse.json({ translation: null, sameAsSource: true })
   }
 
-  // 캐시 히트 (DB 있는 경우만)
+  // 캐시 히트 (DB 있는 경우만) — 단, 비어있거나 dream 본문이 누락된 경우는 무효로 간주
   if (d?.translations && d.translations[locale]) {
-    return NextResponse.json({ translation: d.translations[locale] })
+    const cached = d.translations[locale] as Record<string, unknown>
+    const hasAny = !!cached && typeof cached === 'object' && Object.keys(cached).length > 0 && !!cached.dream
+    if (hasAny) {
+      return NextResponse.json({ translation: cached })
+    }
   }
 
   // 번역 대상 JSON 구성
