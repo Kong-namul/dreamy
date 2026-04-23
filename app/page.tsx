@@ -49,6 +49,18 @@ export default function Home() {
     setOnboarded(!!seen)
   }, [status])
 
+  // 뒤로가기 → 구글 로그인 화면으로 튕기는 문제 방지.
+  // next-auth OAuth 리다이렉트가 히스토리에 남기 때문에, 로그인 후 홈에서
+  // 브라우저 back 을 누르면 그 중간 OAuth URL 로 돌아가 버린다.
+  // 세션이 살아있는 동안에는 back 을 현재 위치로 고정해 튕김을 차단한다.
+  useEffect(() => {
+    if (!session) return
+    window.history.pushState(null, '', window.location.href)
+    const onPop = () => window.history.pushState(null, '', window.location.href)
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [session])
+
   useEffect(() => {
     if (!session?.user?.email) return
     let cancelled = false

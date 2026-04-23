@@ -41,7 +41,19 @@ function extractCached(entry: EntryWithMeta, locale: 'ko' | 'en'): TranslatedDre
   return v as TranslatedDreamShape
 }
 
-export async function fetchDreamTranslation(dreamId: string, locale: 'ko' | 'en'): Promise<TranslatedDreamShape | null> {
+export async function fetchDreamTranslation(
+  dreamId: string,
+  locale: 'ko' | 'en',
+  contentFallback?: {
+    dream: string
+    interpretation?: string | null
+    weather?: string | null
+    pages?: unknown
+    interpretationBlocks?: unknown
+    lucky?: unknown
+    sourceLocale?: 'ko' | 'en'
+  },
+): Promise<TranslatedDreamShape | null> {
   const key = cacheKey(dreamId, locale)
   if (localCache.has(key)) return localCache.get(key)!
   if (inFlight.has(key)) return inFlight.get(key)!
@@ -51,7 +63,7 @@ export async function fetchDreamTranslation(dreamId: string, locale: 'ko' | 'en'
       const res = await fetch('/api/translate/dream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dreamId, locale }),
+        body: JSON.stringify({ dreamId, locale, content: contentFallback }),
       })
       if (!res.ok) return null
       const body = await res.json()
@@ -105,7 +117,15 @@ export function useLocalizedDream<T extends EntryWithMeta>(entry: T): {
     }
     setLoading(true)
     let cancelled = false
-    fetchDreamTranslation(entry.id, locale).then((t) => {
+    fetchDreamTranslation(entry.id, locale, {
+      dream: entry.dream,
+      interpretation: entry.interpretation ?? null,
+      weather: entry.weather ?? null,
+      pages: entry.pages ?? null,
+      interpretationBlocks: entry.interpretationBlocks ?? null,
+      lucky: entry.lucky ?? null,
+      sourceLocale: source,
+    }).then((t) => {
       if (cancelled) return
       setTranslated(t)
       setLoading(false)

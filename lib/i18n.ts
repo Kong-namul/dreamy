@@ -45,6 +45,14 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'diary.empty.cta':    { ko: '꿈 해석하러 가기', en: 'Interpret a dream' },
   'diary.loading.basic':   { ko: '일기 해석 중',    en: 'Interpreting dream' },
   'diary.loading.premium': { ko: '그림일기 작성 중', en: 'Drawing dream diary' },
+  'relative.justNow':      { ko: '방금',           en: 'Just now' },
+
+  // Interpret progress messages
+  'interpret.basic':         { ko: '꿈을 해석하고 있어요...',       en: 'Interpreting your dream...' },
+  'interpret.premium.1':     { ko: '그림일기로 옮기고 있어요...',    en: 'Moving it into a dream diary...' },
+  'interpret.premium.2':     { ko: '장면을 그리고 있어요...',       en: 'Painting the scenes...' },
+  'interpret.premium.3':     { ko: '페이지를 넘기고 있어요...',     en: 'Turning the pages...' },
+  'interpret.premium.4':     { ko: '그림일기가 거의 완성됐어요...', en: 'Your dream diary is almost ready...' },
 
   // Dream card badges / actions
   'badge.premium':      { ko: '그림일기', en: 'Dream Diary' },
@@ -169,6 +177,9 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'creditHistory.tx.spend':    { ko: '사용', en: 'Used' },
   'creditHistory.tx.bonus':    { ko: '보너스', en: 'Bonus' },
   'creditHistory.tx.refund':   { ko: '환불', en: 'Refund' },
+  'creditHistory.label.signupBonus': { ko: '가입 축하 보너스', en: 'Welcome bonus' },
+  'creditHistory.label.basic':  { ko: '기본 해석', en: 'Basic interpretation' },
+  'creditHistory.label.premium': { ko: '그림일기', en: 'Dream Diary' },
 
   // Trash (내 일기 관리)
   'trash.title':        { ko: '내 일기 관리', en: 'Manage diary' },

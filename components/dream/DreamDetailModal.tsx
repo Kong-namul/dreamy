@@ -4,7 +4,7 @@ import { DreamEntry, InterpretationBlock, LuckyToday } from '@/types'
 import { PublicDream } from '@/lib/sampleDreams'
 import { CloseIcon, ChevronLeftIcon, ChevronRightIcon } from '@/components/ui/Icons'
 import MoodPill from '@/components/ui/MoodPill'
-import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspice'
+import { AUSPICE_THEME, inferAuspiceFromMoods } from '@/lib/auspice'
 import { useDreamStore } from '@/store/dreamStore'
 import { useState, useEffect } from 'react'
 import { DreamComment } from '@/types'
@@ -137,7 +137,7 @@ export default function DreamDetailModal({ entry, onClose }: Props) {
 function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => void }) {
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]
-  const auspiceLabel = AUSPICE_LABEL[auspice]
+  const auspiceLabel = tt(`auspice.${auspice}`)
   const authorLabel = entry.authorName ?? (entry.isMine ? tt('detail.author.me') : tt('detail.author.anon'))
 
   return (

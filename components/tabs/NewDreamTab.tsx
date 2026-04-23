@@ -12,6 +12,12 @@ const PREMIUM_LOADING_MSGS = [
   '페이지를 넘기고 있어요...',
   '그림일기가 거의 완성됐어요...',
 ]
+const PREMIUM_LOADING_KEYS = [
+  'interpret.premium.1',
+  'interpret.premium.2',
+  'interpret.premium.3',
+  'interpret.premium.4',
+]
 const PREMIUM_MSG_INTERVAL_MS = 5000
 
 /**
@@ -50,7 +56,8 @@ async function runInterpret(type: 'basic' | 'premium') {
   }
 
   const initialMsg = type === 'basic' ? '꿈을 해석하고 있어요...' : PREMIUM_LOADING_MSGS[0]
-  store.setInterpretJob({ type, msg: initialMsg, startedAt: Date.now() })
+  const initialKey = type === 'basic' ? 'interpret.basic' : PREMIUM_LOADING_KEYS[0]
+  store.setInterpretJob({ type, msg: initialMsg, msgKey: initialKey, startedAt: Date.now() })
 
   // premium 메시지 로테이션 (5초마다)
   let msgTimer: ReturnType<typeof setInterval> | null = null
@@ -58,7 +65,7 @@ async function runInterpret(type: 'basic' | 'premium') {
     let idx = 0
     msgTimer = setInterval(() => {
       idx = Math.min(idx + 1, PREMIUM_LOADING_MSGS.length - 1)
-      useDreamStore.getState().updateInterpretMsg(PREMIUM_LOADING_MSGS[idx])
+      useDreamStore.getState().updateInterpretMsg(PREMIUM_LOADING_MSGS[idx], PREMIUM_LOADING_KEYS[idx])
       if (idx === PREMIUM_LOADING_MSGS.length - 1 && msgTimer) {
         clearInterval(msgTimer)
       }
@@ -132,7 +139,9 @@ export default function NewDreamTab() {
   const setMoods = (next: Mood[]) => setInterpretDraft({ dream, moods: next })
 
   const isLoading = interpretJob !== null
-  const loadingMsg = interpretJob?.msg ?? ''
+  const loadingMsg = interpretJob
+    ? (interpretJob.msgKey ? t(interpretJob.msgKey) : interpretJob.msg)
+    : ''
 
   const handleBasic = () => { void runInterpret('basic') }
   const handlePremium = () => { void runInterpret('premium') }

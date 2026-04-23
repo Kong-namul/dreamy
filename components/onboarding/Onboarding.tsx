@@ -36,8 +36,15 @@ export default function Onboarding({ onDone }: { onDone: () => void }) {
 
   return (
     <div className="flex flex-col min-h-screen px-8 pt-10 pb-16 text-center">
-      {/* Language toggle (건너뛰기 자리) */}
-      <div className="w-full flex justify-end shrink-0">
+      {/* Language toggle — fixed so it stays in place across Onboarding→Auth */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          zIndex: 50,
+        }}
+      >
         <button
           onClick={toggleLocale}
           aria-label="Toggle language"

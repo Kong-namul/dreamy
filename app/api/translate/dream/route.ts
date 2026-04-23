@@ -37,7 +37,19 @@ export async function POST(req: Request) {
   const email = session?.user?.email
   if (!email) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
-  let body: { dreamId?: string; locale?: string } = {}
+  let body: {
+    dreamId?: string
+    locale?: string
+    content?: {
+      dream?: string
+      interpretation?: string | null
+      weather?: string | null
+      pages?: unknown
+      interpretationBlocks?: unknown
+      lucky?: unknown
+      sourceLocale?: 'ko' | 'en'
+    }
+  } = {}
   try { body = await req.json() } catch {}
 
   const dreamId = body.dreamId
@@ -48,35 +60,49 @@ export async function POST(req: Request) {
 
   const supa = supabaseServer()
 
-  const { data: dream, error } = await supa
+  const { data: dream } = await supa
     .from('dreams')
     .select('id, user_id, dream, interpretation, weather, pages, interpretation_blocks, lucky, translations, source_locale')
     .eq('id', dreamId)
     .maybeSingle()
-  if (error || !dream) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
-  const d = dream as DreamRow
-  const source = d.source_locale ?? 'ko'
+  // DB 에 없는 꿈 (seed / sample) 은 inline content 로 번역, DB 캐싱 안함
+  const inlineOnly = !dream
+  if (inlineOnly && !body.content?.dream) {
+    return NextResponse.json({ error: 'not found' }, { status: 404 })
+  }
+
+  const d = (dream ?? null) as DreamRow | null
+  const source = (d?.source_locale ?? body.content?.sourceLocale ?? 'ko') as 'ko' | 'en'
 
   // 요청 언어가 원본과 같으면 번역 불필요 → 원본 반환
   if (source === locale) {
     return NextResponse.json({ translation: null, sameAsSource: true })
   }
 
-  // 캐시 히트
-  if (d.translations && d.translations[locale]) {
+  // 캐시 히트 (DB 있는 경우만)
+  if (d?.translations && d.translations[locale]) {
     return NextResponse.json({ translation: d.translations[locale] })
   }
 
   // 번역 대상 JSON 구성
-  const payload = {
-    dream: d.dream,
-    interpretation: d.interpretation ?? '',
-    weather: d.weather ?? '',
-    pages: d.pages ?? null,
-    interpretationBlocks: d.interpretation_blocks ?? null,
-    lucky: d.lucky ?? null,
-  }
+  const payload = d
+    ? {
+        dream: d.dream,
+        interpretation: d.interpretation ?? '',
+        weather: d.weather ?? '',
+        pages: d.pages ?? null,
+        interpretationBlocks: d.interpretation_blocks ?? null,
+        lucky: d.lucky ?? null,
+      }
+    : {
+        dream: body.content!.dream ?? '',
+        interpretation: body.content!.interpretation ?? '',
+        weather: body.content!.weather ?? '',
+        pages: body.content!.pages ?? null,
+        interpretationBlocks: body.content!.interpretationBlocks ?? null,
+        lucky: body.content!.lucky ?? null,
+      }
 
   const anthropic = new Anthropic({ apiKey })
 
@@ -118,9 +144,11 @@ export async function POST(req: Request) {
     )
   }
 
-  const prev = (d.translations ?? {}) as Record<string, unknown>
-  const next = { ...prev, [locale]: translated }
-  await supa.from('dreams').update({ translations: next }).eq('id', dreamId)
+  if (d) {
+    const prev = (d.translations ?? {}) as Record<string, unknown>
+    const next = { ...prev, [locale]: translated }
+    await supa.from('dreams').update({ translations: next }).eq('id', dreamId)
+  }
 
   return NextResponse.json({ translation: translated })
 }

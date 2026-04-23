@@ -6,7 +6,8 @@ import { inferAuspiceFromMoods } from '@/lib/auspice'
 // 진행 중 해석 작업 — store 레벨에 두어 탭 전환/언마운트에도 중단되지 않음.
 interface InterpretJob {
   type: 'basic' | 'premium'
-  msg: string
+  msg: string                  // deprecated — legacy string (비어 있을 수 있음)
+  msgKey?: string              // i18n 키 (예: 'interpret.basic', 'interpret.premium.1'). 렌더 시점에 번역.
   startedAt: number
 }
 
@@ -46,7 +47,7 @@ interface DreamStore {
   hydrateCreditHistory: (history: CreditTransaction[]) => void
   setInterpretDraft: (draft: { dream: string; moods: Mood[] }) => void
   setInterpretJob: (job: InterpretJob | null) => void
-  updateInterpretMsg: (msg: string) => void
+  updateInterpretMsg: (msg: string, msgKey?: string) => void
   setLocale: (locale: 'ko' | 'en') => void
   toggleLocale: () => void
 }
@@ -211,7 +212,7 @@ export const useDreamStore = create<DreamStore>()(
       hydrateCreditHistory: (history) => set({ creditHistory: history }),
       setInterpretDraft: (draft) => set({ interpretDraft: draft }),
       setInterpretJob: (job) => set({ interpretJob: job }),
-      updateInterpretMsg: (msg: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg } } : {}),
+      updateInterpretMsg: (msg: string, msgKey?: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg, msgKey } } : {}),
       setLocale: (locale) => set({ locale }),
       toggleLocale: () => set((s) => ({ locale: s.locale === 'ko' ? 'en' : 'ko' })),
     }),

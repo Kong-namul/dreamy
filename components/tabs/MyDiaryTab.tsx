@@ -6,7 +6,7 @@ import { motion } from 'framer-motion'
 import { BookIcon } from '@/components/ui/Icons'
 import DreamDetailModal, { DetailEntry } from '@/components/dream/DreamDetailModal'
 import MoodPill from '@/components/ui/MoodPill'
-import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspice'
+import { AUSPICE_THEME, inferAuspiceFromMoods } from '@/lib/auspice'
 import { useLocalizedDream } from '@/lib/translateDream'
 import { useT } from '@/lib/i18n'
 import { formatShortDate } from '@/lib/formatDate'
@@ -44,7 +44,7 @@ function DreamCard({ entry: rawEntry, index, onClick, onToggleShared, onDelete }
   const t = useT()
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]
-  const auspiceLabel = AUSPICE_LABEL[auspice]
+  const auspiceLabel = t(`auspice.${auspice}`)
 
   return (
     <motion.div
@@ -233,7 +233,7 @@ export default function MyDiaryTab() {
         }}
       />
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-        <span style={{ fontSize: 12, color: '#8890B0' }}>방금</span>
+        <span style={{ fontSize: 12, color: '#8890B0' }}>{t('relative.justNow')}</span>
         <span style={{
           padding: '3px 10px',
           borderRadius: 999,
@@ -260,7 +260,7 @@ export default function MyDiaryTab() {
           transition={{ duration: 1.2, ease: 'easeInOut', repeat: Infinity }}
           style={{ width: 6, height: 6, borderRadius: '50%', background: '#C4C0F5' }}
         />
-        <p style={{ fontSize: 12, color: '#C4C0F5', fontWeight: 600 }}>{interpretJob.msg}</p>
+        <p style={{ fontSize: 12, color: '#C4C0F5', fontWeight: 600 }}>{interpretJob.msgKey ? t(interpretJob.msgKey) : interpretJob.msg}</p>
       </div>
     </motion.div>
   ) : null

@@ -2,7 +2,7 @@
 import { signIn, useSession } from 'next-auth/react'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { DreamyLogo } from '@/components/ui/Icons'
+import { DreamyLogo, SwapArrowsIcon } from '@/components/ui/Icons'
 import { useDreamStore } from '@/store/dreamStore'
 import { useT } from '@/lib/i18n'
 
@@ -19,6 +19,7 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false)
   const { update } = useSession()
   const { setActiveTab } = useDreamStore()
+  const toggleLocale = useDreamStore((s) => s.toggleLocale)
   const t = useT()
 
   const handleGoogleSignIn = async () => {
@@ -34,6 +35,33 @@ export default function AuthScreen() {
       transition={{ duration: 0.7 }}
       className="flex flex-col items-center justify-center min-h-screen px-8 pb-52 text-center"
     >
+      {/* Language toggle — fixed top-right, matches Onboarding */}
+      <div
+        style={{
+          position: 'fixed',
+          top: 16,
+          right: 16,
+          zIndex: 50,
+        }}
+      >
+        <button
+          onClick={toggleLocale}
+          aria-label="Toggle language"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            fontSize: 12, fontWeight: 600,
+            padding: '6px 12px', borderRadius: 9999,
+            background: 'rgba(127,119,221,0.12)',
+            border: '1px solid rgba(127,119,221,0.3)',
+            color: '#C0C4DC', cursor: 'pointer',
+          }}
+        >
+          <span>한글</span>
+          <SwapArrowsIcon size={12} style={{ color: '#8890B0' }} />
+          <span>ENG</span>
+        </button>
+      </div>
+
       {/* Logo */}
       <motion.div
         initial={{ y: -24, opacity: 0 }}

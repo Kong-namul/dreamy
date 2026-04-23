@@ -23,6 +23,18 @@ function formatDate(iso: string) {
   })
 }
 
+// 서버/레거시가 한국어 원문으로 저장한 label 을 현재 locale 에 맞게 번역.
+// 매핑에 없는 label (사용자 지정 등) 은 원문 그대로 노출.
+const LABEL_I18N_MAP: Record<string, string> = {
+  '가입 축하 보너스': 'creditHistory.label.signupBonus',
+  '기본 해석':        'creditHistory.label.basic',
+  '그림일기':         'creditHistory.label.premium',
+}
+function localizedLabel(label: string): string {
+  const key = LABEL_I18N_MAP[label]
+  return key ? tt(key) : label
+}
+
 function TypeBadge({ type }: { type: CreditTransaction['type'] }) {
   const map: Record<string, { label: string; bg: string; fg: string }> = {
     purchase: { label: tt('creditHistory.tx.purchase'), bg: 'rgba(127,119,221,0.2)',  fg: '#C4C0F5' },
@@ -67,7 +79,7 @@ function Row({ tx, index }: { tx: CreditTransaction; index: number }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <TypeBadge type={tx.type} />
           <span style={{ fontSize: 13, fontWeight: 500, color: '#E8E8F4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {tx.label}
+            {localizedLabel(tx.label)}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
