@@ -3,14 +3,14 @@ import { useDreamStore } from '@/store/dreamStore'
 import { TabId } from '@/types'
 import { MoonIcon, BookIcon, BarChartIcon } from '@/components/ui/Icons'
 
-const TABS: { id: TabId; icon: React.FC<{ size?: number; style?: React.CSSProperties }>; label: string }[] = [
-  { id: 'new',  icon: MoonIcon,     label: '오늘의꿈' },
-  { id: 'feed', icon: BookIcon,     label: '드림피드' },
-  { id: 'log',  icon: BarChartIcon, label: '드림로그' },
+const TABS: { id: TabId; icon: React.FC<{ size?: number; style?: React.CSSProperties }>; labelKo: string; labelEn: string }[] = [
+  { id: 'new',  icon: MoonIcon,     labelKo: '오늘의꿈', labelEn: 'New dream' },
+  { id: 'feed', icon: BookIcon,     labelKo: '드림피드', labelEn: 'Feed' },
+  { id: 'log',  icon: BarChartIcon, labelKo: '드림로그', labelEn: 'Stats' },
 ]
 
 export default function TabBar() {
-  const { activeTab, setActiveTab } = useDreamStore()
+  const { activeTab, setActiveTab, locale } = useDreamStore()
 
   return (
     <nav
@@ -51,7 +51,7 @@ export default function TabBar() {
             }}
           >
             <Icon size={20} />
-            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: 0 }}>{tab.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 500, letterSpacing: 0 }}>{locale === 'en' ? tab.labelEn : tab.labelKo}</span>
             {active && (
               <span
                 style={{

@@ -23,6 +23,7 @@ interface DreamStore {
   openDreamId: string | null     // 전역 상세 모달 제어
   interpretJob: InterpretJob | null   // 진행 중 해석 (탭 전환에도 살아남음)
   interpretDraft: { dream: string; moods: Mood[] }  // 작성 중 꿈 본문 (탭 전환해도 유지)
+  locale: 'ko' | 'en'                // UI 언어
 
   setCredits: (n: number) => void
   spendCredits: (n: number, label?: string) => boolean
@@ -45,6 +46,8 @@ interface DreamStore {
   setInterpretDraft: (draft: { dream: string; moods: Mood[] }) => void
   setInterpretJob: (job: InterpretJob | null) => void
   updateInterpretMsg: (msg: string) => void
+  setLocale: (locale: 'ko' | 'en') => void
+  toggleLocale: () => void
 }
 
 const INITIAL_STATE = {
@@ -60,6 +63,7 @@ const INITIAL_STATE = {
   openDreamId: null as string | null,
   interpretJob: null as InterpretJob | null,
   interpretDraft: { dream: '', moods: [] as Mood[] },
+  locale: 'ko' as 'ko' | 'en',
 }
 
 const welcomeBonusTx = (): CreditTransaction => ({
@@ -85,6 +89,7 @@ export const useDreamStore = create<DreamStore>()(
       openDreamId: null,
       interpretJob: null,
       interpretDraft: { dream: '', moods: [] },
+      locale: 'ko',
 
       setCredits: (n) => set({ credits: n }),
       spendCredits: (n, label) => {
@@ -205,6 +210,8 @@ export const useDreamStore = create<DreamStore>()(
       setInterpretDraft: (draft) => set({ interpretDraft: draft }),
       setInterpretJob: (job) => set({ interpretJob: job }),
       updateInterpretMsg: (msg: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg } } : {}),
+      setLocale: (locale) => set({ locale }),
+      toggleLocale: () => set((s) => ({ locale: s.locale === 'ko' ? 'en' : 'ko' })),
     }),
     {
       name: 'dreamy-store',

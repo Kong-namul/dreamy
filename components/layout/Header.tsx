@@ -8,11 +8,13 @@ import { TabId } from '@/types'
 import { DreamyLogo, DiamondIcon, CloseIcon, PersonIcon } from '@/components/ui/Icons'
 import { getAvatarAsset } from '@/lib/avatar'
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'new',  label: '오늘의꿈' },
-  { id: 'feed', label: '드림피드' },
-  { id: 'log',  label: '드림로그' },
-]
+const TAB_LABELS: Record<TabId & ('new' | 'feed' | 'log'), { ko: string; en: string }> = {
+  new:  { ko: '오늘의꿈', en: 'New dream' },
+  feed: { ko: '드림피드', en: 'Feed' },
+  log:  { ko: '드림로그', en: 'Stats' },
+} as const
+
+const TAB_IDS: ('new' | 'feed' | 'log')[] = ['new', 'feed', 'log']
 
 function InitialAvatar({ name, size = 32 }: { name?: string | null; size?: number }) {
   const initial = name?.charAt(0)?.toUpperCase() ?? '?'
@@ -99,7 +101,7 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
 }
 
 export default function Header({ session }: { session: Session }) {
-  const { credits, setCreditModalOpen, activeTab, setActiveTab, nickname, avatarUrl } = useDreamStore()
+  const { credits, setCreditModalOpen, activeTab, setActiveTab, nickname, avatarUrl, locale, toggleLocale } = useDreamStore()
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const user = session.user
@@ -165,7 +167,16 @@ export default function Header({ session }: { session: Session }) {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
-          내 일기
+          {locale === 'en' ? 'My Diary' : '내 일기'}
+        </button>
+        <button
+          onClick={() => { toggleLocale() }}
+          style={menuItemStyle}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          aria-label="Toggle language"
+        >
+          한글 ⇄ English
         </button>
         <button
           onClick={() => { setActiveTab('settings'); setAvatarOpen(false) }}
@@ -173,7 +184,7 @@ export default function Header({ session }: { session: Session }) {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
-          설정
+          {locale === 'en' ? 'Settings' : '설정'}
         </button>
         <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '4px 0' }} />
         <button
@@ -182,7 +193,7 @@ export default function Header({ session }: { session: Session }) {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
         >
-          로그아웃
+          {locale === 'en' ? 'Log out' : '로그아웃'}
         </button>
       </div>
     ) : null
@@ -265,12 +276,13 @@ export default function Header({ session }: { session: Session }) {
             </button>
 
             <nav style={{ display: 'flex', height: 64, alignItems: 'center', gap: 32 }}>
-              {TABS.map((tab) => {
-                const active = activeTab === tab.id
+              {TAB_IDS.map((id) => {
+                const active = activeTab === id
+                const label = TAB_LABELS[id][locale]
                 return (
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    key={id}
+                    onClick={() => setActiveTab(id)}
                     style={{
                       position: 'relative',
                       display: 'flex',
@@ -285,7 +297,7 @@ export default function Header({ session }: { session: Session }) {
                       transition: 'color 0.2s',
                     }}
                   >
-                    <span style={{ transform: 'translateY(2px)' }}>{tab.label}</span>
+                    <span style={{ transform: 'translateY(2px)' }}>{label}</span>
                     {active && (
                       <span
                         style={{
