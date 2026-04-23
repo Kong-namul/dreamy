@@ -19,6 +19,7 @@ import GlobalDreamModal from '@/components/dream/GlobalDreamModal'
 import { DEFAULT_NICKNAME } from '@/lib/nicknames'
 import Onboarding from '@/components/onboarding/Onboarding'
 import AuthScreen from '@/components/onboarding/AuthScreen'
+import InAppBrowserGuard from '@/components/onboarding/InAppBrowserGuard'
 import { AnimatePresence, motion } from 'framer-motion'
 
 const TAB_MAP = {
@@ -108,6 +109,7 @@ export default function Home() {
   const cloudHeight = session ? '42%' : '30%'
 
   return (
+    <InAppBrowserGuard>
     <div className="relative min-h-screen overflow-hidden" style={{ background: BG }}>
       <StarField />
       {showClouds && <CloudLayer slideIn height={cloudHeight} />}
@@ -149,5 +151,6 @@ export default function Home() {
       {session && <GlobalDreamModal />}
       {session && <WelcomeBonusModal open={showWelcomeBonus} onClose={handleCloseWelcomeBonus} />}
     </div>
+    </InAppBrowserGuard>
   )
 }
