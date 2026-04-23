@@ -55,7 +55,17 @@ function extractCached(entry: EntryWithMeta, locale: 'ko' | 'en'): TranslatedDre
   if (!t || typeof t !== 'object') return null
   const v = (t as Record<string, unknown>)[locale]
   if (!v || typeof v !== 'object') return null
-  return v as TranslatedDreamShape
+  // 실제 번역된 내용이 하나라도 있어야 유효 캐시로 인정.
+  // (과거 버그나 sameAsSource 캐시로 인해 {} 빈 오브젝트가 남아 있으면 무시하고 새로 번역.)
+  const shape = v as TranslatedDreamShape
+  const hasAny =
+    !!shape.dream ||
+    !!shape.interpretation ||
+    !!shape.weather ||
+    (Array.isArray(shape.pages) && shape.pages.length > 0) ||
+    (Array.isArray(shape.interpretationBlocks) && shape.interpretationBlocks.length > 0) ||
+    !!shape.lucky
+  return hasAny ? shape : null
 }
 
 export async function fetchDreamTranslation(
