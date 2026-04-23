@@ -488,7 +488,7 @@ function WithdrawConfirmModal({
             <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>정말 탈퇴하시겠어요?</p>
             <div style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.7 }}>
               탈퇴 시 다음 항목이 <span style={{ color: '#E8899A', fontWeight: 600 }}>모두 초기화</span>돼요:
-              <ul style={{ paddingLeft: 18, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <ul style={{ paddingLeft: 20, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4, listStyleType: 'disc', listStylePosition: 'outside' }}>
                 <li>기록한 꿈 전체</li>
                 <li>보유 크레딧 및 충전 내역</li>
                 <li>닉네임·아바타·프로필</li>
