@@ -45,8 +45,35 @@ function UserAvatar({
 
 export default function SettingsTab() {
   const { data: session } = useSession()
-  const { credits, dreams, nickname, avatarUrl, setNickname, setAvatarUrl, setActiveTab } = useDreamStore()
+  const { credits, dreams, nickname, avatarUrl, setNickname, setAvatarUrl, setActiveTab, resetAll } = useDreamStore()
   const [editing, setEditing] = useState(false)
+  const [withdrawing, setWithdrawing] = useState(false)
+  const [withdrawOpen, setWithdrawOpen] = useState(false)
+
+  const handleWithdraw = async () => {
+    setWithdrawing(true)
+    try {
+      const res = await fetch('/api/user/withdraw', { method: 'POST' })
+      if (!res.ok && res.status !== 404) {
+        const body = await res.json().catch(() => ({}))
+        alert(`탈퇴 처리 중 문제가 생겼어요${body.error ? `: ${body.error}` : ''}. 잠시 후 다시 시도해주세요.`)
+        setWithdrawing(false)
+        return
+      }
+      // 1) 로컬 상태 초기화 (dreams/credits/history/nickname/avatar/comments)
+      resetAll()
+      // 2) 온보딩/welcome-bonus 플래그도 지움 → 재로그인 시 신규처럼 취급
+      if (session?.user?.email) {
+        localStorage.removeItem(`dreamy_welcome_bonus_${session.user.email}`)
+      }
+      // 3) 로그아웃 → 홈
+      await signOut({ callbackUrl: '/' })
+    } catch (err) {
+      console.error(err)
+      alert('네트워크 오류가 발생했어요. 잠시 후 다시 시도해주세요.')
+      setWithdrawing(false)
+    }
+  }
 
   const user = session?.user
   const publicDreams = dreams.filter((d) => d.shared).length
@@ -141,6 +168,33 @@ export default function SettingsTab() {
       >
         로그아웃
       </button>
+
+      {/* Withdraw — 조금 더 숨김처리 톤. 탈퇴는 신중해야 해서 작게 배치 */}
+      <button
+        onClick={() => setWithdrawOpen(true)}
+        style={{
+          alignSelf: 'center',
+          padding: '6px 12px',
+          marginTop: -4,
+          background: 'none',
+          border: 'none',
+          color: '#555E80',
+          fontSize: 12,
+          textDecoration: 'underline',
+          textUnderlineOffset: 3,
+          cursor: 'pointer',
+        }}
+      >
+        탈퇴하기
+      </button>
+
+      {withdrawOpen && (
+        <WithdrawConfirmModal
+          onCancel={() => setWithdrawOpen(false)}
+          onConfirm={handleWithdraw}
+          busy={withdrawing}
+        />
+      )}
 
       {/* 통합 프로필 편집 모달 */}
       {editing && (
@@ -393,4 +447,136 @@ function MenuButton({ label, onClick }: { label: string; onClick: () => void }) 
 
 function Divider() {
   return <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 16px' }} />
+}
+
+/**
+ * 탈퇴 확인 모달.
+ * Step 1: 경고 + "정말 탈퇴" → Step 2: 최종 확인 ("탈퇴" 단어 타이핑)
+ */
+function WithdrawConfirmModal({
+  onCancel, onConfirm, busy,
+}: {
+  onCancel: () => void
+  onConfirm: () => void
+  busy: boolean
+}) {
+  const [step, setStep] = useState<1 | 2>(1)
+  const [typed, setTyped] = useState('')
+  const CONFIRM_WORD = '탈퇴'
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 80,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 16,
+    }}>
+      <div
+        onClick={busy ? undefined : onCancel}
+        style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)' }}
+      />
+      <div
+        style={{
+          position: 'relative', width: '100%', maxWidth: 380,
+          padding: 24, borderRadius: 20,
+          background: '#0D1330', border: '1px solid rgba(196,75,114,0.35)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+          display: 'flex', flexDirection: 'column', gap: 14,
+        }}
+      >
+        {step === 1 && (
+          <>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>정말 탈퇴하시겠어요?</p>
+            <div style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.7 }}>
+              탈퇴 시 다음 항목이 <span style={{ color: '#E8899A', fontWeight: 600 }}>모두 초기화</span>돼요:
+              <ul style={{ paddingLeft: 18, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <li>기록한 꿈 전체</li>
+                <li>보유 크레딧 및 충전 내역</li>
+                <li>닉네임·아바타·프로필</li>
+                <li>내가 단 댓글</li>
+              </ul>
+              <p style={{ marginTop: 10, fontSize: 12, color: '#555E80' }}>
+                동일한 구글 계정으로 다시 로그인해도 <strong style={{ color: '#8890B0' }}>새 계정으로 시작</strong>되며 이전 기록은 복구되지 않아요.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+              <button
+                onClick={onCancel}
+                disabled={busy}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#8890B0', border: '1px solid rgba(255,255,255,0.08)',
+                  fontSize: 13, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer',
+                }}
+              >
+                취소
+              </button>
+              <button
+                onClick={() => setStep(2)}
+                disabled={busy}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  background: 'rgba(196,75,114,0.18)',
+                  color: '#E8899A', border: '1px solid rgba(196,75,114,0.4)',
+                  fontSize: 13, fontWeight: 700, cursor: busy ? 'not-allowed' : 'pointer',
+                }}
+              >
+                계속 진행
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <>
+            <p style={{ fontSize: 17, fontWeight: 700, color: '#E8E8F4' }}>마지막 확인</p>
+            <p style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.6 }}>
+              계속하려면 아래 칸에 <span style={{ color: '#E8899A', fontWeight: 700 }}>&quot;탈퇴&quot;</span> 두 글자를 입력해주세요. 이 작업은 되돌릴 수 없어요.
+            </p>
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="탈퇴"
+              autoFocus
+              disabled={busy}
+              style={{
+                width: '100%', padding: '10px 12px', borderRadius: 10,
+                background: 'rgba(255,255,255,0.05)',
+                border: typed === CONFIRM_WORD ? '1px solid rgba(232,137,154,0.6)' : '1px solid rgba(127,119,221,0.25)',
+                color: '#E8E8F4', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
+              <button
+                onClick={() => { setStep(1); setTyped('') }}
+                disabled={busy}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#8890B0', border: '1px solid rgba(255,255,255,0.08)',
+                  fontSize: 13, fontWeight: 600, cursor: busy ? 'not-allowed' : 'pointer',
+                }}
+              >
+                뒤로
+              </button>
+              <button
+                onClick={onConfirm}
+                disabled={busy || typed !== CONFIRM_WORD}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 12,
+                  background: (busy || typed !== CONFIRM_WORD) ? 'rgba(196,75,114,0.15)' : 'rgba(196,75,114,0.35)',
+                  color: (busy || typed !== CONFIRM_WORD) ? '#7A5966' : '#FFD7DE',
+                  border: '1px solid rgba(196,75,114,0.55)',
+                  fontSize: 13, fontWeight: 700,
+                  cursor: (busy || typed !== CONFIRM_WORD) ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {busy ? '처리 중...' : '탈퇴 확정'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
 }

@@ -31,6 +31,20 @@ interface DreamStore {
   softDeleteDream: (id: string) => void    // 일반 삭제 → 휴지통 이동
   restoreDream: (id: string) => void        // 휴지통 → 복구
   permanentlyDeleteDream: (id: string) => void  // 휴지통 영구 삭제
+  resetAll: () => void                       // 탈퇴 시 모든 로컬 상태 초기화
+}
+
+const INITIAL_STATE = {
+  credits: 50,
+  dreams: [] as DreamEntry[],
+  activeTab: 'new' as TabId,
+  creditModalOpen: false,
+  nickname: '꿈꾸는이',
+  avatarUrl: null as string | null,
+  creditHistory: [] as CreditTransaction[],
+  deletedDreams: [] as DreamEntry[],
+  commentsByDreamId: {} as Record<string, DreamComment[]>,
+  openDreamId: null as string | null,
 }
 
 const welcomeBonusTx = (): CreditTransaction => ({
@@ -163,6 +177,11 @@ export const useDreamStore = create<DreamStore>()(
         set((s) => ({
           deletedDreams: s.deletedDreams.filter((d) => d.id !== id),
         })),
+      resetAll: () => {
+        // 탈퇴 시: 모든 로컬 상태 초기화. 다음 로그인 시 ensure API 가
+        // DB 에서 새 유저 row 를 만들어주면 welcome bonus 도 다시 부여됨.
+        set({ ...INITIAL_STATE })
+      },
     }),
     {
       name: 'dreamy-store',
