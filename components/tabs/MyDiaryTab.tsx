@@ -7,6 +7,8 @@ import { BookIcon } from '@/components/ui/Icons'
 import DreamDetailModal, { DetailEntry } from '@/components/dream/DreamDetailModal'
 import MoodPill from '@/components/ui/MoodPill'
 import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspice'
+import { useLocalizedDream } from '@/lib/translateDream'
+import { useT } from '@/lib/i18n'
 
 function SkeletonLine({ width }: { width: string }) {
   return (
@@ -30,13 +32,15 @@ const CLAMP2: React.CSSProperties = {
   overflow: 'hidden',
 }
 
-function DreamCard({ entry, index, onClick, onToggleShared, onDelete }: {
+function DreamCard({ entry: rawEntry, index, onClick, onToggleShared, onDelete }: {
   entry: DreamEntry
   index: number
   onClick: () => void
   onToggleShared: (e: React.MouseEvent) => void
   onDelete: (e: React.MouseEvent) => void
 }) {
+  const { entry, translating } = useLocalizedDream(rawEntry)
+  const t = useT()
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]
   const auspiceLabel = AUSPICE_LABEL[auspice]
@@ -90,7 +94,20 @@ function DreamCard({ entry, index, onClick, onToggleShared, onDelete }: {
               border: '1px solid rgba(127,119,221,0.4)',
               color: '#C4C0F5',
             }}>
-              그림일기
+              {t('badge.premium')}
+            </span>
+          )}
+          {translating && (
+            <span style={{
+              padding: '3px 10px',
+              borderRadius: 999,
+              fontSize: 10,
+              fontWeight: 600,
+              background: 'rgba(127,119,221,0.12)',
+              color: '#8890B0',
+              letterSpacing: 0.3,
+            }}>
+              {t('action.translating')}
             </span>
           )}
         </div>
@@ -131,7 +148,7 @@ function DreamCard({ entry, index, onClick, onToggleShared, onDelete }: {
           onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196,75,114,0.2)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(196,75,114,0.1)')}
         >
-          삭제
+          {t('action.delete')}
         </button>
         <button
           onClick={onToggleShared}
@@ -147,7 +164,7 @@ function DreamCard({ entry, index, onClick, onToggleShared, onDelete }: {
             transition: 'all 0.15s',
           }}
         >
-          {entry.shared ? '공개됨 · 피드 노출' : '비공개 · 나만 보기'}
+          {entry.shared ? t('action.share') : t('action.private')}
         </button>
       </div>
     </motion.div>
@@ -158,6 +175,7 @@ export default function MyDiaryTab() {
   const { dreams, nickname, setShared, softDeleteDream, setActiveTab, interpretJob } = useDreamStore()
   const [selected, setSelected] = useState<DetailEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const t = useT()
 
   const handleToggleShared = (id: string, current: boolean) => {
     if (!current) {
@@ -224,7 +242,7 @@ export default function MyDiaryTab() {
           color: '#C4C0F5',
           letterSpacing: 0.5,
         }}>
-          {interpretJob.type === 'premium' ? '그림일기 작성 중' : '일기 해석 중'}
+          {interpretJob.type === 'premium' ? t('diary.loading.premium') : t('diary.loading.basic')}
         </span>
       </div>
 
@@ -258,9 +276,9 @@ export default function MyDiaryTab() {
         >
           <BookIcon size={28} style={{ color: '#555E80' }} />
         </div>
-        <p style={{ fontSize: 15, fontWeight: 600, color: '#C0C4DC' }}>아직 저장된 꿈이 없어요</p>
+        <p style={{ fontSize: 15, fontWeight: 600, color: '#C0C4DC' }}>{t('diary.empty.title')}</p>
         <p style={{ fontSize: 13, color: '#6B739A', textAlign: 'center', lineHeight: 1.6, maxWidth: 280 }}>
-          오늘 꾼 꿈을 해석해보세요.<br />해석하면 이곳에 자동으로 저장돼요.
+          {t('diary.empty.hint')}
         </p>
         <button
           type="button"
@@ -281,7 +299,7 @@ export default function MyDiaryTab() {
           onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.08)')}
           onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
         >
-          꿈 해석하러 가기
+          {t('diary.empty.cta')}
         </button>
       </div>
     )
@@ -290,9 +308,9 @@ export default function MyDiaryTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 48 }}>
       <div style={{ padding: '0 4px', marginBottom: 4 }}>
-        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>내 일기</p>
+        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{t('diary.title')}</p>
         <p style={{ fontSize: 13, color: '#8890B0', marginTop: 4 }}>
-          내 꿈은 기본 비공개예요. 공개 버튼을 누르면 드림피드에 나타나요
+          {t('diary.subtitle')}
         </p>
       </div>
       {pendingSkeleton}

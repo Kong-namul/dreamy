@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { DiamondIcon, ChevronRightIcon, PersonIcon, CloseIcon } from '@/components/ui/Icons'
 import { useState } from 'react'
 import { getAvatarAsset, AVATAR_PRESETS, isNicknameAvailable, AVATAR_ICON_SENTINEL } from '@/lib/avatar'
+import { useT } from '@/lib/i18n'
 
 const CARD_STYLE: React.CSSProperties = {
   background: 'rgba(17, 26, 58, 0.7)',
@@ -49,6 +50,7 @@ export default function SettingsTab() {
   const [editing, setEditing] = useState(false)
   const [withdrawing, setWithdrawing] = useState(false)
   const [withdrawOpen, setWithdrawOpen] = useState(false)
+  const t = useT()
 
   const handleWithdraw = async () => {
     setWithdrawing(true)
@@ -83,7 +85,7 @@ export default function SettingsTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
       {/* Header — 설정 메인은 뒤로 버튼 없이 좌측 정렬 타이틀만 */}
       <div style={{ padding: '0 4px' }}>
-        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>설정</p>
+        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{t('settings.title')}</p>
       </div>
 
       {/* Profile card — 아바타·닉네임 수정 진입점 */}
@@ -112,7 +114,7 @@ export default function SettingsTab() {
                 flexShrink: 0,
               }}
             >
-              수정
+              {t('settings.edit')}
             </button>
           </div>
           <p style={{ fontSize: 13, color: '#8890B0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -124,15 +126,15 @@ export default function SettingsTab() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
         <div style={{ ...CARD_STYLE, padding: '16px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <p style={{ fontSize: 11, color: '#8890B0' }}>기록한 꿈</p>
+          <p style={{ fontSize: 11, color: '#8890B0' }}>{t('settings.stats.totalDreams')}</p>
           <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{dreams.length}</p>
         </div>
         <div style={{ ...CARD_STYLE, padding: '16px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <p style={{ fontSize: 11, color: '#8890B0' }}>공개한 꿈</p>
+          <p style={{ fontSize: 11, color: '#8890B0' }}>{t('settings.stats.publicDreams')}</p>
           <p style={{ fontSize: 20, fontWeight: 700, color: '#C4C0F5' }}>{publicDreams}</p>
         </div>
         <div style={{ ...CARD_STYLE, padding: '16px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <p style={{ fontSize: 11, color: '#8890B0' }}>보유 크레딧</p>
+          <p style={{ fontSize: 11, color: '#8890B0' }}>{t('settings.stats.credits')}</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <span style={{ fontSize: 20, fontWeight: 700, color: '#C4C0F5' }}>{credits}</span>
             <DiamondIcon size={12} style={{ color: '#9D96F0' }} />
@@ -142,11 +144,11 @@ export default function SettingsTab() {
 
       {/* Menu */}
       <div style={{ ...CARD_STYLE, padding: 4, overflow: 'hidden' }}>
-        <MenuButton label="충전 히스토리" onClick={() => setActiveTab('history')} />
+        <MenuButton label={t('settings.menu.history')} onClick={() => setActiveTab('history')} />
         <Divider />
-        <MenuButton label="내 일기 관리" onClick={() => setActiveTab('trash')} />
+        <MenuButton label={t('settings.menu.trash')} onClick={() => setActiveTab('trash')} />
         <Divider />
-        <MenuButton label="약관 및 정책" onClick={() => alert('준비 중이에요')} />
+        <MenuButton label={t('settings.menu.terms')} onClick={() => alert('준비 중이에요')} />
       </div>
 
       {/* Logout */}
@@ -167,7 +169,7 @@ export default function SettingsTab() {
         onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196,75,114,0.2)')}
         onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(196,75,114,0.12)')}
       >
-        로그아웃
+        {t('settings.logout')}
       </button>
 
       {/* Withdraw — 로그아웃 하단, 약간만 숨김 톤 유지 */}
@@ -186,7 +188,7 @@ export default function SettingsTab() {
           cursor: 'pointer',
         }}
       >
-        탈퇴하기
+        {t('settings.withdraw')}
       </button>
 
       {withdrawOpen && (

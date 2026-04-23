@@ -1,6 +1,7 @@
 'use client'
 import { motion, AnimatePresence } from 'framer-motion'
 import { DiamondIcon } from '@/components/ui/Icons'
+import { useT } from '@/lib/i18n'
 
 interface Props {
   open: boolean
@@ -8,6 +9,7 @@ interface Props {
 }
 
 export default function WelcomeBonusModal({ open, onClose }: Props) {
+  const t = useT()
   return (
     <AnimatePresence>
       {open && (
@@ -47,16 +49,16 @@ export default function WelcomeBonusModal({ open, onClose }: Props) {
             </div>
 
             <p style={{ fontSize: 18, fontWeight: 800, color: '#E8E8F4', lineHeight: 1.4 }}>
-              기록의 시작을 환영해요
+              {t('welcome.title')}
             </p>
 
             <p style={{ fontSize: 14, color: '#C0C4DC', lineHeight: 1.6 }}>
-              첫 일기를 응원하는 마음으로<br />
+              {t('welcome.body')}<br />
               <span style={{ color: '#C4C0F5', fontWeight: 700 }}>
                 <DiamondIcon size={14} style={{ color: '#A09AEE', display: 'inline-block', verticalAlign: 'middle', marginRight: 3 }} />
-                크레딧 50
+                {t('welcome.credits')}
               </span>
-              을 드려요.
+              {t('welcome.closing')}
             </p>
 
             <button
@@ -79,7 +81,7 @@ export default function WelcomeBonusModal({ open, onClose }: Props) {
               onMouseEnter={(e) => (e.currentTarget.style.filter = 'brightness(1.08)')}
               onMouseLeave={(e) => (e.currentTarget.style.filter = 'brightness(1)')}
             >
-              기록 시작하기
+              {t('welcome.cta')}
             </button>
           </motion.div>
         </div>

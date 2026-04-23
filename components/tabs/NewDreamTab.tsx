@@ -4,6 +4,7 @@ import { useDreamStore } from '@/store/dreamStore'
 import MoodSelector from '@/components/dream/MoodSelector'
 import { DiamondIcon, WritingPaperIcon } from '@/components/ui/Icons'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useT } from '@/lib/i18n'
 
 const PREMIUM_LOADING_MSGS = [
   '그림일기로 옮기고 있어요...',
@@ -119,6 +120,7 @@ async function runInterpret(type: 'basic' | 'premium') {
 }
 
 export default function NewDreamTab() {
+  const t = useT()
   const interpretJob = useDreamStore((s) => s.interpretJob)
   const interpretDraft = useDreamStore((s) => s.interpretDraft)
   const setInterpretDraft = useDreamStore((s) => s.setInterpretDraft)
@@ -148,10 +150,10 @@ export default function NewDreamTab() {
             {/* Title */}
             <div style={{ padding: '0 4px' }}>
               <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>
-                어떤 꿈을 꾸셨나요?
+                {t('new.title')}
               </p>
               <p style={{ fontSize: 13, color: '#8890B0', marginTop: 6 }}>
-                떠오르는 대로 적어주세요. 색·소리·냄새 디테일이 있을수록 해석이 풍부해져요.
+                {t('new.subtitle')}
               </p>
             </div>
 
@@ -184,7 +186,7 @@ export default function NewDreamTab() {
                 <textarea
                   value={dream}
                   onChange={(e) => setDream(e.target.value)}
-                  placeholder="오늘 밤 꾼 꿈을 적어주세요..."
+                  placeholder={t('new.placeholder')}
                   style={{
                     width: '100%',
                     background: 'transparent',
@@ -200,14 +202,14 @@ export default function NewDreamTab() {
                   }}
                 />
                 <div style={{ textAlign: 'right', fontSize: 11, color: '#9B8060', marginTop: 4 }}>
-                  {dream.length}자
+                  {dream.length}{t('new.charCount')}
                 </div>
               </div>
             </div>
 
             {/* Mood */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ fontSize: 12, fontWeight: 500, color: '#555E80' }}>꿈의 기분</p>
+              <p style={{ fontSize: 12, fontWeight: 500, color: '#555E80' }}>{t('new.moodLabel')}</p>
               <MoodSelector values={moods} onChange={setMoods} />
             </div>
 
@@ -235,7 +237,7 @@ export default function NewDreamTab() {
                 onMouseEnter={(e) => { if (dream.trim()) e.currentTarget.style.filter = 'brightness(1.1)' }}
                 onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)' }}
               >
-                <span>기본 해석</span>
+                <span>{t('new.basic')}</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}>
                   <DiamondIcon size={10} /> 5
                 </span>
@@ -262,7 +264,7 @@ export default function NewDreamTab() {
                 onMouseEnter={(e) => { if (dream.trim()) e.currentTarget.style.filter = 'brightness(1.1)' }}
                 onMouseLeave={(e) => { e.currentTarget.style.filter = 'brightness(1)' }}
               >
-                <span>그림일기</span>
+                <span>{t('new.premium')}</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, opacity: 0.85 }}>
                   <DiamondIcon size={10} /> 15
                 </span>
