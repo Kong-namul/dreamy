@@ -252,6 +252,55 @@ export default function CreditModal() {
     }
   }
 
+  const handleStripe = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('stripe')
+    try {
+      const res = await fetch('/api/payment/stripe/create-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok || !body.checkoutUrl) {
+        throw new Error(body.error ?? 'Stripe 세션 생성 실패')
+      }
+      window.location.href = body.checkoutUrl
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      setPayError(msg)
+      setPayingId(null)
+    }
+  }
+
+  const handleBinance = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('binance')
+    try {
+      const res = await fetch('/api/payment/binance/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(body.error ?? 'Binance Pay 주문 생성 실패')
+      }
+      // 모바일: deeplink / 데스크톱: checkoutUrl (or QR). 일단 checkoutUrl 우선.
+      const target = body.checkoutUrl ?? body.universalUrl ?? body.deeplink ?? body.qrCodeLink
+      if (!target) {
+        throw new Error('Binance Pay 응답에 결제 링크가 없어요')
+      }
+      window.location.href = target
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      setPayError(msg)
+      setPayingId(null)
+    }
+  }
+
   const handleBitPay = async () => {
     if (!picked) return
     setPayError(null)
@@ -283,6 +332,14 @@ export default function CreditModal() {
     }
     if (payment.id === 'bitpay') {
       handleBitPay()
+      return
+    }
+    if (payment.id === 'stripe') {
+      handleStripe()
+      return
+    }
+    if (payment.id === 'binance') {
+      handleBinance()
       return
     }
     // 나머지 결제수단은 아직 프로토타입
