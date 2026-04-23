@@ -252,10 +252,37 @@ export default function CreditModal() {
     }
   }
 
+  const handleBitPay = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('bitpay')
+    try {
+      const res = await fetch('/api/payment/bitpay/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok || !body.checkoutUrl) {
+        throw new Error(body.error ?? 'invoice 생성 실패')
+      }
+      // BitPay 호스팅 체크아웃으로 리다이렉트 — 결제 완료 시 /payment/success 로 복귀
+      window.location.href = body.checkoutUrl
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '알 수 없는 오류'
+      setPayError(msg)
+      setPayingId(null)
+    }
+  }
+
   const handlePay = (payment: PaymentMethod) => {
     if (payingId) return  // 이미 진행 중이면 무시
     if (payment.id === 'base') {
       handleBasePay()
+      return
+    }
+    if (payment.id === 'bitpay') {
+      handleBitPay()
       return
     }
     // 나머지 결제수단은 아직 프로토타입
@@ -536,7 +563,8 @@ export default function CreditModal() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
                               <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>
                                 {pm.label}
-                                {pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true' && (
+                                {((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')
+                                  || (pm.id === 'bitpay' && process.env.NEXT_PUBLIC_BITPAY_TESTNET === 'true')) && (
                                   <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: '#C4C0F5', background: 'rgba(127,119,221,0.18)', padding: '2px 6px', borderRadius: 999 }}>
                                     TESTNET
                                   </span>
