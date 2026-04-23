@@ -204,9 +204,21 @@ export default function SettingsTab() {
           currentAvatar={avatarUrl}
           onClose={() => setEditing(false)}
           onSave={(newNick, newAvatar) => {
+            // 로컬 즉시 반영 (낙관적 UI)
             if (newNick !== nickname) setNickname(newNick)
             if (newAvatar !== avatarUrl) setAvatarUrl(newAvatar)
             setEditing(false)
+            // 서버 동기화 — 다른 기기에서도 같은 프로필이 보이도록
+            const patch: { nickname?: string; avatar_url?: string | null } = {}
+            if (newNick !== nickname) patch.nickname = newNick
+            if (newAvatar !== avatarUrl) patch.avatar_url = newAvatar
+            if (Object.keys(patch).length > 0) {
+              fetch('/api/user/profile', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(patch),
+              }).catch(() => {})
+            }
           }}
         />
       )}

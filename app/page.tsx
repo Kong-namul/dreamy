@@ -71,10 +71,13 @@ export default function Home() {
           return
         }
 
-        // 기존 유저 — 로컬 기본값이면 서버 값으로 동기화만 (팝업 없음)
+        // 기존 유저 — DB 가 진실의 원천. 항상 서버 값으로 동기화해서
+        // 기기별 로컬 캐시 차이를 제거한다.
         if (user) {
-          if (nickname === DEFAULT_NICKNAME) setNickname(user.nickname)
-          if (!avatarUrl && user.avatar_url) setAvatarUrl(user.avatar_url)
+          if (user.nickname && user.nickname !== nickname) setNickname(user.nickname)
+          if (user.avatar_url !== undefined && user.avatar_url !== avatarUrl) {
+            setAvatarUrl(user.avatar_url ?? null)
+          }
         }
 
         // 꿈 목록 서버 동기화 — 다른 기기에서도 보이게
