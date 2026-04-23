@@ -384,36 +384,43 @@ export default function CreditModal() {
             padding: 16,
           }}
         >
-          {/* Top-center toast */}
+          {/* Top-center toast — 포지셔닝 wrapper 와 애니메이션 motion 을 분리해
+              framer-motion 의 transform 이 중앙 정렬을 덮어쓰지 않게 한다. */}
           <AnimatePresence>
             {toast && (
-              <motion.div
-                key="toast"
-                initial={{ opacity: 0, y: -16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.2 }}
+              <div
+                key="toast-wrapper"
                 style={{
                   position: 'fixed',
                   top: 24,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
+                  left: 0,
+                  right: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
                   zIndex: 100,
-                  padding: '10px 18px',
-                  borderRadius: 999,
-                  background: 'rgba(13,19,48,0.95)',
-                  border: '1px solid rgba(127,119,221,0.45)',
-                  color: '#E8E8F4',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                  backdropFilter: 'blur(8px)',
-                  whiteSpace: 'nowrap',
                   pointerEvents: 'none',
                 }}
               >
-                {toast}
-              </motion.div>
+                <motion.div
+                  initial={{ opacity: 0, y: -16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.2 }}
+                  style={{
+                    padding: '11px 20px',
+                    borderRadius: 999,
+                    background: '#7F77DD',  // 앱 포인트 보라
+                    color: 'white',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    boxShadow: '0 12px 32px rgba(127,119,221,0.45)',
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {toast}
+                </motion.div>
+              </div>
             )}
           </AnimatePresence>
           <motion.div
