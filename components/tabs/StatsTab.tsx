@@ -10,6 +10,7 @@ const ChevronRight = ({ size = 12, color = '#8890B0' }: { size?: number; color?:
 )
 import { MOOD_LABEL, MOOD_COLOR } from '@/lib/moods'
 import { Mood } from '@/types'
+import { useT } from '@/lib/i18n'
 
 const MOOD_ORDER: Exclude<Mood, null>[] = [
   'happy', 'excited', 'peaceful', 'nostalgic', 'fascinating',
@@ -33,6 +34,7 @@ const CARD_STYLE: React.CSSProperties = {
 
 export default function StatsTab() {
   const { dreams, setActiveTab } = useDreamStore()
+  const t = useT()
 
   const totalDreams = dreams.length
   const thisWeek = dreams.filter((d) => Date.now() - new Date(d.date).getTime() < 7 * 86400000).length
@@ -45,26 +47,26 @@ export default function StatsTab() {
   const maxCount = Math.max(...moodCounts.map((m) => m.count), 1)
 
   const metrics = [
-    { label: '총 꿈', value: totalDreams, Icon: MoonIcon, color: '#7F77DD' },
-    { label: '이번 주', value: thisWeek, Icon: CalIcon, color: '#4A7AFF' },
-    { label: '소비 크레딧', value: spentCredits, Icon: DiamondIcon, color: '#C44B72' },
+    { key: 'total', label: t('stats.totalDreams'), value: totalDreams, Icon: MoonIcon, color: '#7F77DD', clickable: false },
+    { key: 'week', label: t('stats.thisWeek'), value: thisWeek, Icon: CalIcon, color: '#4A7AFF', clickable: false },
+    { key: 'spent', label: t('stats.spentCredits'), value: spentCredits, Icon: DiamondIcon, color: '#C44B72', clickable: true },
   ]
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Title */}
       <div style={{ padding: '0 4px', marginBottom: 4 }}>
-        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>드림로그</p>
+        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{t('stats.title')}</p>
       </div>
 
       {/* Metric cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
         {metrics.map((m, i) => {
           const Icon = m.Icon
-          const clickable = m.label === '소비 크레딧'
+          const clickable = m.clickable
           return (
             <motion.div
-              key={m.label}
+              key={m.key}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.08 }}
@@ -105,19 +107,19 @@ export default function StatsTab() {
       <div style={{ ...CARD_STYLE, padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <BarChartIcon size={16} style={{ color: '#9D96F0' }} />
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#C4C0F5' }}>기분별 분포</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#C4C0F5' }}>{t('stats.moodChart')}</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {MOOD_ORDER.map((key, i) => {
             const count = moodCounts.find((m) => m.key === key)?.count ?? 0
             const pct = (count / maxCount) * 100
-            const label = MOOD_LABEL[key]
+            const label = t(`mood.${key}`)
             const color = MOOD_COLOR[key].fg
             return (
               <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
                   <span style={{ color: count > 0 ? '#E8E8F4' : '#8890B0' }}>{label}</span>
-                  <span style={{ color: '#555E80' }}>{count}회</span>
+                  <span style={{ color: '#555E80' }}>{count}</span>
                 </div>
                 <div
                   style={{

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { DreamyLogo } from '@/components/ui/Icons'
 import { useDreamStore } from '@/store/dreamStore'
+import { useT } from '@/lib/i18n'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -18,6 +19,7 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false)
   const { update } = useSession()
   const { setActiveTab } = useDreamStore()
+  const t = useT()
 
   const handleGoogleSignIn = async () => {
     setLoading(true)
@@ -47,7 +49,7 @@ export default function AuthScreen() {
           <DreamyLogo size={78} style={{ color: '#C4C0F5' }} />
         </div>
         <h1 className="text-3xl font-bold" style={{ color: '#E8E8F4', marginTop: '1rem', fontFamily: "'Nunito', sans-serif", fontWeight: 800 }}>Dreamy</h1>
-        <p style={{ color: '#8890B0', marginTop: '0.5rem', fontSize: 16 }}>AI 꿈 해석 서비스</p>
+        <p style={{ color: '#8890B0', marginTop: '0.5rem', fontSize: 16 }}>{t('auth.subtitle')}</p>
       </motion.div>
 
       {/* CTA */}
@@ -65,10 +67,10 @@ export default function AuthScreen() {
           style={{ background: 'white', color: '#1a1a2e', padding: '1rem 2rem', borderRadius: '1rem', fontSize: 15 }}
         >
           <GoogleIcon />
-          {loading ? '로그인 중...' : 'Google로 시작하기'}
+          {loading ? t('auth.loading') : t('auth.google')}
         </button>
         <p style={{ color: '#5C6480', fontSize: 14 }}>
-          이용약관 및 개인정보 처리방침에 동의합니다.
+          {t('auth.tos')}
         </p>
       </motion.div>
     </motion.div>

@@ -20,11 +20,13 @@ import {
   BROWSER_LABEL,
   type InAppBrowser,
 } from '@/lib/detectInAppBrowser'
+import { useT } from '@/lib/i18n'
 
 export default function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
   const [detected, setDetected] = useState<InAppBrowser>(null)
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
+  const t = useT()
 
   useEffect(() => {
     setMounted(true)
@@ -139,13 +141,11 @@ export default function InAppBrowserGuard({ children }: { children: React.ReactN
         </div>
 
         <p style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.4 }}>
-          {label} 인앱 브라우저에서는<br />로그인이 안 돼요
+          {t('iabg.title').replace('{browser}', label)}
         </p>
 
         <p style={{ fontSize: 13, color: '#8890B0', lineHeight: 1.7 }}>
-          Google 정책상 인앱 브라우저에서는<br />
-          Google 로그인이 차단돼 있어요.<br />
-          <strong style={{ color: '#C0C4DC' }}>Chrome 또는 Safari</strong> 에서 열어주세요.
+          {t('iabg.body')}
         </p>
 
         {/* Action buttons */}
@@ -164,7 +164,7 @@ export default function InAppBrowserGuard({ children }: { children: React.ReactN
                 boxShadow: '0 10px 24px rgba(127,119,221,0.35)',
               }}
             >
-              {detected === 'kakaotalk' ? '외부 브라우저로 열기' : 'Chrome 으로 열기'}
+              {detected === 'kakaotalk' ? t('iabg.openExternal') : t('iabg.openChrome')}
             </button>
           )}
 
@@ -181,7 +181,7 @@ export default function InAppBrowserGuard({ children }: { children: React.ReactN
               cursor: 'pointer',
             }}
           >
-            주소 복사하기
+            {t('iabg.copyUrl')}
           </button>
         </div>
 

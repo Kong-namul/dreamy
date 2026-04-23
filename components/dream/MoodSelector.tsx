@@ -1,18 +1,8 @@
 'use client'
 import { Mood } from '@/types'
+import { useT } from '@/lib/i18n'
 
-const MOODS: { value: Mood; label: string }[] = [
-  { value: 'happy',       label: '행복한' },
-  { value: 'excited',     label: '설레는' },
-  { value: 'peaceful',    label: '평온한' },
-  { value: 'nostalgic',   label: '그리운' },
-  { value: 'fascinating', label: '신기한' },
-  { value: 'weird',       label: '이상한' },
-  { value: 'confused',    label: '혼란스러운' },
-  { value: 'anxious',     label: '불안한' },
-  { value: 'scary',       label: '무서운' },
-  { value: 'sad',         label: '슬픈' },
-]
+const MOOD_ORDER: Mood[] = ['happy', 'excited', 'peaceful', 'nostalgic', 'fascinating', 'weird', 'confused', 'anxious', 'scary', 'sad']
 
 interface Props {
   values: Mood[]
@@ -20,6 +10,7 @@ interface Props {
 }
 
 export default function MoodSelector({ values, onChange }: Props) {
+  const t = useT()
   const toggle = (m: Mood) => {
     if (values.includes(m)) onChange(values.filter((v) => v !== m))
     else onChange([...values, m])
@@ -27,12 +18,14 @@ export default function MoodSelector({ values, onChange }: Props) {
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-      {MOODS.map((m) => {
-        const active = values.includes(m.value)
+      {MOOD_ORDER.map((m) => {
+        if (!m) return null
+        const active = values.includes(m)
+        const label = t(`mood.${m}`)
         return (
           <button
-            key={m.value}
-            onClick={() => toggle(m.value)}
+            key={m}
+            onClick={() => toggle(m)}
             style={{
               padding: '6px 14px',
               borderRadius: 9999,
@@ -42,9 +35,11 @@ export default function MoodSelector({ values, onChange }: Props) {
               color: active ? '#C4C0F5' : '#8890B0',
               cursor: 'pointer',
               transition: 'all 0.15s',
+              minWidth: 72,   // 한글/영문 너비 차이 완화
+              textAlign: 'center',
             }}
           >
-            {m.label}
+            {label}
           </button>
         )
       })}

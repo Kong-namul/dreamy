@@ -27,7 +27,7 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   // New dream
   'new.title':          { ko: '어떤 꿈을 꾸셨나요?', en: 'What did you dream about?' },
   'new.subtitle':       { ko: '떠오르는 대로 적어주세요. 색·소리·냄새 디테일이 있을수록 해석이 풍부해져요.',
-                          en: 'Write whatever comes to mind. Colors, sounds, and smells make the interpretation richer.' },
+                          en: 'Write freely — sensory details deepen the reading.' },
   'new.placeholder':    { ko: '오늘 밤 꾼 꿈을 적어주세요...',
                           en: 'Write the dream you had tonight...' },
   'new.moodLabel':      { ko: '꿈의 기분',  en: 'Mood of the dream' },
@@ -83,6 +83,125 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'common.save':        { ko: '저장', en: 'Save' },
   'common.close':       { ko: '닫기', en: 'Close' },
   'common.back':        { ko: '뒤로', en: 'Back' },
+  'common.confirm':     { ko: '확인', en: 'Confirm' },
+  'common.deleteOnce':  { ko: '삭제', en: 'Delete' },
+  'common.retry':       { ko: '다시 시도', en: 'Retry' },
+
+  // Auspice labels
+  'auspice.auspicious': { ko: '길몽', en: 'Auspicious' },
+  'auspice.ominous':    { ko: '흉몽', en: 'Ominous' },
+  'auspice.neutral':    { ko: '중립몽', en: 'Neutral' },
+
+  // Moods
+  'mood.happy':         { ko: '행복한', en: 'Happy' },
+  'mood.peaceful':      { ko: '평온한', en: 'Peaceful' },
+  'mood.excited':       { ko: '설레는', en: 'Excited' },
+  'mood.fascinating':   { ko: '신비로운', en: 'Fascinating' },
+  'mood.nostalgic':     { ko: '그리운', en: 'Nostalgic' },
+  'mood.weird':         { ko: '이상한', en: 'Weird' },
+  'mood.confused':      { ko: '혼란스러운', en: 'Confused' },
+  'mood.anxious':       { ko: '불안한', en: 'Anxious' },
+  'mood.scary':         { ko: '무서운', en: 'Scary' },
+  'mood.sad':           { ko: '슬픈', en: 'Sad' },
+
+  // Feed (DiaryTab)
+  'feed.endMessage':    { ko: '모든 꿈을 다 보셨어요', en: "You've seen every dream" },
+  'feed.comments':      { ko: '댓글', en: 'Comments' },
+  'feed.commentCount':  { ko: '댓글 {n}개', en: '{n} comments' },
+  'feed.anonymous':     { ko: '익명', en: 'Anonymous' },
+
+  // Stats (StatsTab)
+  'stats.title':        { ko: '드림로그', en: 'Stats' },
+  'stats.subtitle':     { ko: '내 꿈 기록을 한눈에', en: 'Your dream journal at a glance' },
+  'stats.totalDreams':  { ko: '기록한 꿈', en: 'Dreams logged' },
+  'stats.thisWeek':     { ko: '이번 주', en: 'This week' },
+  'stats.spentCredits': { ko: '누적 크레딧', en: 'Credits spent' },
+  'stats.moodChart':    { ko: '기분별 분포', en: 'Mood distribution' },
+  'stats.empty':        { ko: '아직 통계가 없어요', en: 'No stats yet' },
+
+  // Credit history
+  'creditHistory.title':    { ko: '충전 히스토리', en: 'Purchase history' },
+  'creditHistory.empty':    { ko: '아직 거래가 없어요', en: 'No transactions yet' },
+  'creditHistory.count':    { ko: '건', en: '' },
+  'creditHistory.totalPurchased': { ko: '누적 충전', en: 'Total purchased' },
+  'creditHistory.totalSpent':     { ko: '누적 사용', en: 'Total spent' },
+  'creditHistory.tx.purchase': { ko: '충전', en: 'Top-up' },
+  'creditHistory.tx.spend':    { ko: '사용', en: 'Used' },
+  'creditHistory.tx.bonus':    { ko: '보너스', en: 'Bonus' },
+  'creditHistory.tx.refund':   { ko: '환불', en: 'Refund' },
+
+  // Trash (내 일기 관리)
+  'trash.title':        { ko: '내 일기 관리', en: 'Manage diary' },
+  'trash.subtitle':     { ko: '휴지통에는 삭제된 꿈이 보관돼요. 복구하거나 영구 삭제할 수 있어요.',
+                          en: 'Deleted dreams are kept here. You can restore them or delete them permanently.' },
+  'trash.empty.title':  { ko: '휴지통이 비어있어요', en: 'Trash is empty' },
+  'trash.empty.hint':   { ko: '삭제한 꿈은 여기에 보관됩니다', en: 'Deleted dreams will appear here' },
+  'trash.restore':      { ko: '복구', en: 'Restore' },
+  'trash.deletePermanent': { ko: '영구 삭제', en: 'Delete permanently' },
+  'trash.confirm.title': { ko: '정말 영구 삭제할까요?', en: 'Delete permanently?' },
+  'trash.confirm.body':  { ko: '이 꿈은 완전히 사라져요. 되돌릴 수 없어요.',
+                           en: 'This dream will be removed forever. This cannot be undone.' },
+
+  // Dream detail modal
+  'detail.share':       { ko: '공개하기', en: 'Share to feed' },
+  'detail.unshare':     { ko: '비공개로', en: 'Make private' },
+  'detail.fortune':     { ko: '오늘의 운세', en: "Today's fortune" },
+  'detail.fortuneLoading': { ko: '불러오는 중...', en: 'Loading…' },
+  'detail.saveToDiary': { ko: '일기장 저장', en: 'Save to diary' },
+  'detail.saved':       { ko: '저장됨', en: 'Saved' },
+  'detail.lucky.item':  { ko: '오늘의 행운 아이템', en: 'Lucky item today' },
+  'detail.lucky.color': { ko: '행운의 색', en: 'Lucky color' },
+  'detail.lucky.direction': { ko: '행운의 방향', en: 'Lucky direction' },
+  'detail.lucky.number': { ko: '행운의 숫자', en: 'Lucky number' },
+  'detail.lucky.avoid': { ko: '오늘 피해야 할 것', en: 'Things to avoid' },
+  'detail.original':    { ko: '원문 보기', en: 'Show original' },
+  'detail.hideOriginal':{ ko: '원문 숨기기', en: 'Hide original' },
+  'detail.commentPlaceholder': { ko: '따뜻한 댓글을 남겨주세요', en: 'Leave a kind comment' },
+  'detail.commentSend': { ko: '등록', en: 'Post' },
+
+  // Profile editor
+  'profile.title':      { ko: '프로필 수정', en: 'Edit profile' },
+  'profile.nickname':   { ko: '닉네임', en: 'Nickname' },
+  'profile.nicknameHint': { ko: '12자 이내. 바꾸면 내가 남긴 댓글도 함께 업데이트돼요.',
+                            en: 'Up to 12 chars. Changing updates your past comments too.' },
+  'profile.avatar':     { ko: '아바타', en: 'Avatar' },
+  'profile.customUrl':  { ko: '또는 이미지 URL 직접 입력', en: 'Or paste an image URL' },
+  'profile.apply':      { ko: '적용', en: 'Apply' },
+  'profile.preview':    { ko: '미리보기', en: 'Preview' },
+
+  // Withdraw modal
+  'withdraw.title':     { ko: '정말 탈퇴하시겠어요?', en: 'Delete your account?' },
+  'withdraw.intro':     { ko: '탈퇴 시 다음 항목이 모두 초기화돼요:',
+                          en: 'The following will all be reset:' },
+  'withdraw.item.dreams': { ko: '기록한 꿈 전체', en: 'All logged dreams' },
+  'withdraw.item.credits':{ ko: '보유 크레딧 및 충전 내역', en: 'Credit balance and history' },
+  'withdraw.item.profile':{ ko: '닉네임·아바타·프로필', en: 'Nickname, avatar, profile' },
+  'withdraw.item.comments':{ ko: '내가 단 댓글', en: 'Comments you left' },
+  'withdraw.footnote':  { ko: '동일한 구글 계정으로 다시 로그인해도 새 계정으로 시작되며 이전 기록은 복구되지 않아요.',
+                          en: 'Signing in again with the same Google account starts a fresh account; previous records cannot be restored.' },
+  'withdraw.continue':  { ko: '계속 진행', en: 'Continue' },
+  'withdraw.finalTitle':{ ko: '마지막 확인', en: 'Final confirmation' },
+  'withdraw.finalBody': { ko: '계속하려면 아래 칸에 "탈퇴" 두 글자를 입력해주세요. 이 작업은 되돌릴 수 없어요.',
+                          en: 'To continue, type "DELETE" below. This cannot be undone.' },
+  'withdraw.confirmWord': { ko: '탈퇴', en: 'DELETE' },
+  'withdraw.confirm':   { ko: '탈퇴 확정', en: 'Confirm deletion' },
+  'withdraw.processing':{ ko: '처리 중...', en: 'Processing…' },
+
+  // Auth screen
+  'auth.subtitle':      { ko: 'AI 꿈 해석 서비스', en: 'AI dream interpretation' },
+  'auth.google':        { ko: 'Google로 시작하기', en: 'Continue with Google' },
+  'auth.loading':       { ko: '로그인 중...', en: 'Signing in…' },
+  'auth.tos':           { ko: '이용약관 및 개인정보 처리방침에 동의합니다.',
+                          en: 'I agree to the terms and privacy policy.' },
+
+  // In-app browser guard
+  'iabg.title':         { ko: '{browser} 인앱 브라우저에서는 로그인이 안 돼요',
+                          en: "Login isn't available inside {browser}'s in-app browser" },
+  'iabg.body':          { ko: 'Google 정책상 인앱 브라우저에서는 Google 로그인이 차단돼 있어요. Chrome 또는 Safari 에서 열어주세요.',
+                          en: 'Google blocks sign-in inside in-app browsers. Please open this in Chrome or Safari.' },
+  'iabg.openExternal':  { ko: '외부 브라우저로 열기', en: 'Open in external browser' },
+  'iabg.openChrome':    { ko: 'Chrome 으로 열기', en: 'Open in Chrome' },
+  'iabg.copyUrl':       { ko: '주소 복사하기', en: 'Copy URL' },
 }
 
 export function t(key: string, locale?: Locale): string {

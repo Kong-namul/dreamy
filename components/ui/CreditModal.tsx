@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useDreamStore } from '@/store/dreamStore'
 import { DiamondIcon, CloseIcon, ArrowLeftIcon, ChevronRightIcon } from '@/components/ui/Icons'
 import { pay } from '@base-org/account'
+import { useT } from '@/lib/i18n'
 
 interface Package {
   id: string
@@ -171,6 +172,7 @@ export default function CreditModal() {
   const [payingId, setPayingId] = useState<string | null>(null)
   const [payError, setPayError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const t = useT()
 
   useEffect(() => {
     if (!toast) return
@@ -342,7 +344,7 @@ export default function CreditModal() {
   const handlePay = (payment: PaymentMethod) => {
     if (payingId) return  // 이미 진행 중이면 무시
     if (payment.comingSoon) {
-      setToast(`${payment.label} 는 준비 중이에요`)
+      setToast(`${payment.label}${t('credit.comingSoonToast')}`)
       return
     }
     if (payment.id === 'base') {
@@ -475,12 +477,12 @@ export default function CreditModal() {
                   onMouseEnter={(e) => (e.currentTarget.style.color = '#C4C0F5')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = '#8890B0')}
                 >
-                  <ArrowLeftIcon size={14} /> 뒤로
+                  <ArrowLeftIcon size={14} /> {t('common.back')}
                 </button>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <DiamondIcon size={16} style={{ color: '#9D96F0' }} />
-                  <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E8E8F4' }}>크레딧 충전</h2>
+                  <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E8E8F4' }}>{t('credit.title')}</h2>
                 </div>
               )}
               <button
@@ -596,7 +598,7 @@ export default function CreditModal() {
                       onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
                       onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                     >
-                      충전 히스토리 보기
+                      {t('credit.history')}
                     </button>
                   </motion.div>
                 ) : (
@@ -625,7 +627,7 @@ export default function CreditModal() {
                           <DiamondIcon size={18} style={{ color: '#9D96F0' }} />
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: 15, fontWeight: 700, color: '#E8E8F4' }}>
-                              {picked.credits.toLocaleString()} 크레딧
+                              {picked.credits.toLocaleString()} {t('welcome.credits').includes('credits') ? 'credits' : '크레딧'}
                             </span>
                             <span style={{ fontSize: 11, color: '#8890B0' }}>{picked.label} 팩</span>
                           </div>
@@ -637,7 +639,7 @@ export default function CreditModal() {
                     )}
 
                     <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>
-                      결제 방법 선택
+                      {t('credit.selectMethod')}
                     </p>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
@@ -681,7 +683,7 @@ export default function CreditModal() {
                                 {pm.label}
                                 {comingSoon && (
                                   <span style={{ fontSize: 10, fontWeight: 700, color: '#8890B0', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 999, letterSpacing: 0.3 }}>
-                                    준비 중
+                                    {t('credit.comingSoon')}
                                   </span>
                                 )}
                                 {!comingSoon && ((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')

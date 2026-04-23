@@ -9,6 +9,8 @@ import { PUBLIC_DREAMS, PublicDream } from '@/lib/sampleDreams'
 import DreamDetailModal, { DetailEntry } from '@/components/dream/DreamDetailModal'
 import { AUSPICE_THEME, AUSPICE_LABEL, inferAuspiceFromMoods } from '@/lib/auspice'
 import MoodPill from '@/components/ui/MoodPill'
+import { useT } from '@/lib/i18n'
+import { useLocalizedDream } from '@/lib/translateDream'
 
 type FeedItem = (DreamEntry | PublicDream) & { isMine?: boolean; authorName?: string; authorInitial?: string }
 
@@ -81,11 +83,13 @@ function Avatar({ authorName, mine, customUrl }: { authorName: string; mine?: bo
   )
 }
 
-function FeedCard({ entry, index, onClick, myAvatarUrl }: { entry: FeedItem; index: number; onClick: () => void; myAvatarUrl?: string | null }) {
+function FeedCard({ entry: rawEntry, index, onClick, myAvatarUrl }: { entry: FeedItem; index: number; onClick: () => void; myAvatarUrl?: string | null }) {
+  const { entry, translating } = useLocalizedDream(rawEntry)
+  const t = useT()
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]
-  const auspiceLabel = AUSPICE_LABEL[auspice]
-  const authorLabel = entry.authorName ?? '익명'
+  const auspiceLabel = t(`auspice.${auspice}`)
+  const authorLabel = entry.authorName ?? t('feed.anonymous')
 
   return (
     <motion.div
@@ -149,7 +153,15 @@ function FeedCard({ entry, index, onClick, myAvatarUrl }: { entry: FeedItem; ind
                 color: '#C4C0F5',
               }}
             >
-              그림일기
+              {t('badge.premium')}
+            </span>
+          )}
+          {translating && (
+            <span style={{
+              padding: '3px 10px', borderRadius: 999, fontSize: 10, fontWeight: 600,
+              background: 'rgba(127,119,221,0.12)', color: '#8890B0', letterSpacing: 0.3,
+            }}>
+              {t('action.translating')}
             </span>
           )}
         </div>
@@ -177,7 +189,7 @@ function FeedCard({ entry, index, onClick, myAvatarUrl }: { entry: FeedItem; ind
       {/* Comments count */}
       {entry.comments && entry.comments.length > 0 && (
         <p style={{ fontSize: 11, color: '#555E80' }}>
-          댓글 {entry.comments.length}개
+          {t('feed.commentCount').replace('{n}', String(entry.comments.length))}
         </p>
       )}
     </motion.div>
@@ -189,6 +201,7 @@ export default function DiaryTab() {
   const [selected, setSelected] = useState<DetailEntry | null>(null)
   const [pageCount, setPageCount] = useState(1)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const t = useT()
 
   const mySharedDreams: FeedItem[] = dreams
     .filter((d) => d.shared)
@@ -235,8 +248,8 @@ export default function DiaryTab() {
         >
           <GlobeIcon size={28} style={{ color: '#555E80' }} />
         </div>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#8890B0' }}>공유된 꿈이 아직 없어요</p>
-        <p style={{ fontSize: 12, color: '#3C4260' }}>내 꿈을 공개하면 이곳에 나타나요</p>
+        <p style={{ fontSize: 14, fontWeight: 500, color: '#8890B0' }}>{t('feed.empty.title')}</p>
+        <p style={{ fontSize: 12, color: '#3C4260' }}>{t('feed.empty.hint')}</p>
       </div>
     )
   }
@@ -244,9 +257,9 @@ export default function DiaryTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 48 }}>
       <div style={{ padding: '0 4px', marginBottom: 4 }}>
-        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>드림피드</p>
+        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{t('feed.title')}</p>
         <p style={{ fontSize: 13, color: '#8890B0', marginTop: 4 }}>
-          다른 사람들이 공유한 꿈과 내가 공개한 꿈이 모이는 곳이에요
+          {t('feed.subtitle')}
         </p>
       </div>
 
@@ -281,7 +294,7 @@ export default function DiaryTab() {
 
       {!hasMore && feed.length > PAGE_SIZE && (
         <p style={{ textAlign: 'center', fontSize: 12, color: '#C4C0F5', padding: '16px 0 32px' }}>
-          모든 꿈을 다 보셨어요
+          {t('feed.endMessage')}
         </p>
       )}
 

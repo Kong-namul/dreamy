@@ -5,6 +5,8 @@ import { motion } from 'framer-motion'
 import { ArrowLeftIcon, BookIcon } from '@/components/ui/Icons'
 import { useState } from 'react'
 import MoodPill from '@/components/ui/MoodPill'
+import { useT } from '@/lib/i18n'
+import { useLocalizedDream } from '@/lib/translateDream'
 
 const CARD_STYLE: React.CSSProperties = {
   background: 'rgba(17, 26, 58, 0.6)',
@@ -17,6 +19,7 @@ const CARD_STYLE: React.CSSProperties = {
 export default function TrashTab() {
   const { deletedDreams, restoreDream, permanentlyDeleteDream, setActiveTab } = useDreamStore()
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const t = useT()
 
   const handleConfirmDelete = () => {
     if (!confirmDeleteId) return
@@ -44,14 +47,14 @@ export default function TrashTab() {
           onClick={() => setActiveTab('settings')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'none', border: 'none', color: '#8890B0', cursor: 'pointer', padding: 0 }}
         >
-          <ArrowLeftIcon size={14} /> 뒤로
+          <ArrowLeftIcon size={14} /> {t('common.back')}
         </button>
-        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>내 일기 관리</p>
+        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{t('trash.title')}</p>
         <div style={{ width: 48 }} />
       </div>
 
       <p style={{ fontSize: 12, color: '#8890B0', padding: '0 4px', lineHeight: 1.6 }}>
-        휴지통에는 삭제된 꿈이 보관돼요. 복구하거나 영구 삭제할 수 있어요.
+        {t('trash.subtitle')}
       </p>
 
       {deletedDreams.length === 0 ? (
@@ -59,8 +62,8 @@ export default function TrashTab() {
           <div style={{ width: 56, height: 56, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(127,119,221,0.1)' }}>
             <BookIcon size={28} style={{ color: '#555E80' }} />
           </div>
-          <p style={{ fontSize: 14, fontWeight: 500, color: '#8890B0' }}>휴지통이 비어있어요</p>
-          <p style={{ fontSize: 12, color: '#3C4260' }}>삭제한 꿈은 여기에 보관됩니다</p>
+          <p style={{ fontSize: 14, fontWeight: 500, color: '#8890B0' }}>{t('trash.empty.title')}</p>
+          <p style={{ fontSize: 12, color: '#3C4260' }}>{t('trash.empty.hint')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -93,10 +96,10 @@ export default function TrashTab() {
             display: 'flex', flexDirection: 'column', gap: 14,
           }}>
             <p style={{ fontSize: 16, fontWeight: 700, color: '#E8E8F4' }}>
-              정말 영구 삭제할까요?
+              {t('trash.confirm.title')}
             </p>
             <p style={{ fontSize: 13, lineHeight: 1.6, color: '#8890B0' }}>
-              영구 삭제하면 <span style={{ color: '#E8899A', fontWeight: 600 }}>다시는 복구할 수 없어요.</span>
+              {t('trash.confirm.body')}
             </p>
             <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
               <button
@@ -108,7 +111,7 @@ export default function TrashTab() {
                   fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
               >
-                취소
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleConfirmDelete}
@@ -119,7 +122,7 @@ export default function TrashTab() {
                   fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}
               >
-                영구 삭제
+                {t('trash.deletePermanent')}
               </button>
             </div>
           </div>
@@ -130,13 +133,15 @@ export default function TrashTab() {
 }
 
 function TrashCard({
-  entry, index, onRestore, onDeleteRequest,
+  entry: rawEntry, index, onRestore, onDeleteRequest,
 }: {
   entry: DreamEntry
   index: number
   onRestore: () => void
   onDeleteRequest: () => void
 }) {
+  const { entry } = useLocalizedDream(rawEntry)
+  const t = useT()
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -162,7 +167,7 @@ function TrashCard({
           color: entry.type === 'premium' ? '#C4C0F5' : '#E8899A',
           flexShrink: 0,
         }}>
-          {entry.type === 'premium' ? '그림일기' : '기본'}
+          {entry.type === 'premium' ? t('badge.premium') : t('new.basic')}
         </span>
       </div>
       <p style={{
@@ -187,7 +192,7 @@ function TrashCard({
             fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}
         >
-          복구
+          {t('trash.restore')}
         </button>
         <button
           onClick={onDeleteRequest}
@@ -198,7 +203,7 @@ function TrashCard({
             fontSize: 12, fontWeight: 600, cursor: 'pointer',
           }}
         >
-          영구 삭제
+          {t('trash.deletePermanent')}
         </button>
       </div>
     </motion.div>
