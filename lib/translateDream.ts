@@ -33,6 +33,23 @@ const inFlight = new Map<string, Promise<TranslatedDreamShape | null>>()
 
 function cacheKey(id: string, locale: string): string { return `${id}:${locale}` }
 
+// 저장된 sourceLocale 이 실제 내용과 불일치하는 경우를 방어.
+// 한글 음절(U+AC00–D7A3) 이 전체 글자 중 20% 이상이면 'ko', 아니면 'en'.
+// 이 값이 entry.sourceLocale 보다 우선. (예: 영어 모드에서 한국어로 적어 저장된 꿈)
+function detectLocale(text: string): 'ko' | 'en' {
+  if (!text) return 'ko'
+  let hangul = 0
+  let latin = 0
+  for (const ch of text) {
+    const code = ch.codePointAt(0)!
+    if (code >= 0xac00 && code <= 0xd7a3) hangul++
+    else if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) latin++
+  }
+  const total = hangul + latin
+  if (total === 0) return 'ko'
+  return hangul / total >= 0.2 ? 'ko' : 'en'
+}
+
 function extractCached(entry: EntryWithMeta, locale: 'ko' | 'en'): TranslatedDreamShape | null {
   const t = entry.translations
   if (!t || typeof t !== 'object') return null
@@ -91,7 +108,10 @@ export function useLocalizedDream<T extends EntryWithMeta>(entry: T): {
   translating: boolean
 } {
   const locale = useDreamStore((s) => s.locale)
-  const source = (entry.sourceLocale ?? 'ko') as 'ko' | 'en'
+  // sourceLocale 태그를 신뢰하되, 실제 본문이 다른 언어로 보이면 본문 기준을 우선.
+  const tagged = (entry.sourceLocale ?? 'ko') as 'ko' | 'en'
+  const detected = detectLocale(entry.dream ?? '')
+  const source: 'ko' | 'en' = tagged === detected ? tagged : detected
   const [translated, setTranslated] = useState<TranslatedDreamShape | null>(() =>
     locale === source ? null : extractCached(entry, locale),
   )
