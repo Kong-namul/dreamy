@@ -53,7 +53,8 @@ export async function POST(req: Request) {
   let translated = ''
   try {
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      // Haiku 4.5 — 댓글 번역처럼 짧고 회전율 높은 작업은 속도 우선.
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 500,
       system: `Translate casual Korean/English social comments between languages for a dream-journal app. Keep warmth and casual tone. Return ONLY the translated text, no quotes, no prose.`,
       messages: [{

@@ -175,13 +175,20 @@ function FeedCard({ entry: rawEntry, index, onClick, myAvatarUrl }: { entry: Fee
         </div>
       )}
 
-      {/* Dream text (2 line clamp) */}
-      <p style={{ fontSize: 14, lineHeight: '22px', color: '#C0C4DC', ...CLAMP2 }}>
-        {entry.dream}
-      </p>
+      {/* Dream text (2 line clamp). 번역 중이면 원문 깜빡임 방지용 스켈레톤 표시. */}
+      {translating ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ height: 14, borderRadius: 6, background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(127,119,221,0.14), rgba(255,255,255,0.04))', backgroundSize: '200% 100%', animation: 'skeleton-shimmer 1.6s ease-in-out infinite' }} />
+          <div style={{ height: 14, borderRadius: 6, width: '78%', background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(127,119,221,0.14), rgba(255,255,255,0.04))', backgroundSize: '200% 100%', animation: 'skeleton-shimmer 1.6s ease-in-out infinite' }} />
+        </div>
+      ) : (
+        <p style={{ fontSize: 14, lineHeight: '22px', color: '#C0C4DC', ...CLAMP2 }}>
+          {entry.dream}
+        </p>
+      )}
 
       {/* Interpretation preview */}
-      {entry.interpretation && (
+      {!translating && entry.interpretation && (
         <p style={{ fontSize: 12, lineHeight: '20px', color: '#6B739A', ...CLAMP2 }}>
           {entry.interpretation}
         </p>

@@ -126,7 +126,9 @@ export async function POST(req: Request) {
   let translated: Record<string, unknown>
   try {
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      // Haiku 4.5 = Sonnet 대비 2~3배 빠름. 피드 번역은 속도가 UX 의 전부라 Haiku 사용.
+      // 번역 품질은 여전히 자연스러운 수준.
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 4000,
       system: systemPrompt,
       messages: [{
