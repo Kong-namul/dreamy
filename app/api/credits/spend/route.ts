@@ -4,6 +4,10 @@
  * body: { amount: number (양수), label: string }
  * response: { credits: number } — 차감 후 남은 크레딧
  * 잔액 부족: 402
+ *
+ * 구현: Supabase RPC `spend_credits(email, amount, label)` 호출.
+ * 조건부 UPDATE … RETURNING 으로 잔액 확인·차감·트랜잭션 기록을 한 트랜잭션에 묶어
+ * 동시 호출에도 중복 차감·음수 잔액이 생기지 않는다.
  */
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
@@ -24,37 +28,31 @@ export async function POST(req: Request) {
   }
 
   const supa = supabaseServer()
-
-  const { data: user, error: userErr } = await supa
-    .from('users')
-    .select('id, credits')
-    .eq('email', email)
-    .is('deleted_at', null)
-    .maybeSingle()
-  if (userErr || !user) {
-    return NextResponse.json({ error: 'no user' }, { status: 404 })
-  }
-
-  if (user.credits < amount) {
-    return NextResponse.json({ error: 'insufficient credits', credits: user.credits }, { status: 402 })
-  }
-
-  const newCredits = user.credits - amount
-
-  // NOTE: 원자적 차감을 위해 updated_at 기반 optimistic lock 이 이상적이지만,
-  // 현 단계 규모에선 단순 UPDATE 면 충분. 동시성 이슈 생기면 RPC/stored procedure 로 이관.
-  const { error: updErr } = await supa
-    .from('users')
-    .update({ credits: newCredits })
-    .eq('id', user.id)
-  if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
-
-  await supa.from('credit_transactions').insert({
-    user_id: user.id,
-    type: 'spend',
-    amount: -amount,
-    label,
+  const { data, error } = await supa.rpc('spend_credits', {
+    p_email: email,
+    p_amount: Math.floor(amount),
+    p_label: label,
   })
 
-  return NextResponse.json({ credits: newCredits })
+  if (error) {
+    if (error.message === 'no user') return NextResponse.json({ error: 'no user' }, { status: 404 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // RPC 계약: -1 = 잔액 부족, >=0 = 차감 후 남은 크레딧
+  if (typeof data !== 'number') {
+    return NextResponse.json({ error: 'unexpected rpc response' }, { status: 500 })
+  }
+  if (data < 0) {
+    // 현재 잔액을 함께 돌려주기 위해 한 번 조회
+    const { data: u } = await supa
+      .from('users')
+      .select('credits')
+      .eq('email', email)
+      .is('deleted_at', null)
+      .maybeSingle()
+    return NextResponse.json({ error: 'insufficient credits', credits: u?.credits ?? 0 }, { status: 402 })
+  }
+
+  return NextResponse.json({ credits: data })
 }

@@ -31,30 +31,6 @@ async function runInterpret(type: 'basic' | 'premium') {
   const draft = store.interpretDraft
   if (!draft.dream.trim()) return
 
-  const cost = type === 'basic' ? 5 : 15
-  const label = type === 'basic' ? '기본 해석' : '그림일기'
-
-  // 서버에 먼저 차감 요청 → 진실의 원천이 DB 라 다른 기기에서도 일치
-  try {
-    const spendRes = await fetch('/api/credits/spend', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount: cost, label }),
-    })
-    if (!spendRes.ok) {
-      // 잔액 부족 (402) 또는 서버 오류 — 크레딧 모달 열기
-      store.setCreditModalOpen(true)
-      return
-    }
-    const body = await spendRes.json()
-    if (typeof body?.credits === 'number') {
-      store.setCredits(body.credits)
-    }
-  } catch {
-    // 네트워크 실패 → 로컬 검증으로 폴백 (오프라인 UX 유지)
-    if (!store.spendCredits(cost, label)) return
-  }
-
   const initialMsg = type === 'basic' ? '꿈을 해석하고 있어요...' : PREMIUM_LOADING_MSGS[0]
   const initialKey = type === 'basic' ? 'interpret.basic' : PREMIUM_LOADING_KEYS[0]
   store.setInterpretJob({ type, msg: initialMsg, msgKey: initialKey, startedAt: Date.now() })
@@ -72,55 +48,47 @@ async function runInterpret(type: 'basic' | 'premium') {
     }, PREMIUM_MSG_INTERVAL_MS)
   }
 
+  // 단일 엔드포인트로 "차감 → AI → 저장 → 실패 시 자동 환불" 까지 서버가 책임.
   try {
-    const endpoint = type === 'basic' ? '/api/interpret' : '/api/diary'
-    const res = await fetch(endpoint, {
+    const res = await fetch('/api/interpret/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dream: draft.dream, moods: draft.moods }),
+      body: JSON.stringify({
+        type,
+        dream: draft.dream,
+        moods: draft.moods,
+        sourceLocale: useDreamStore.getState().locale,
+      }),
     })
-    const data = await res.json()
 
-    const entry: Partial<DreamEntry> & { sourceLocale?: 'ko' | 'en' } = {
-      dream: draft.dream,
-      interpretation: data.interpretation ?? '',
-      moods: (draft.moods.length > 0 ? draft.moods : (data.moods ?? [])) as Mood[],
-      auspice: data.auspice,
-      type,
-      weather: data.weather,
-      pages: data.pages,
-      interpretationBlocks: data.interpretationBlocks,
-      lucky: data.lucky,
-      shared: false,
-      sourceLocale: useDreamStore.getState().locale,
+    if (res.status === 402) {
+      // 잔액 부족 — 서버가 차감한 것도 없음. 잔액 모달.
+      const body = await res.json().catch(() => ({} as { credits?: number }))
+      if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
+      useDreamStore.getState().setInterpretJob(null)
+      useDreamStore.getState().setCreditModalOpen(true)
+      return
     }
 
-    // 서버에 저장해 서버 생성 id 받아오기 (다른 기기에서도 보이려면 필수)
-    let saved: DreamEntry | null = null
-    try {
-      const save = await fetch('/api/dreams', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry),
-      })
-      if (save.ok) {
-        const j = await save.json()
-        if (j?.dream) saved = j.dream as DreamEntry
-      }
-    } catch { /* 네트워크 실패해도 로컬에는 저장 — 오프라인 fallback */ }
+    if (!res.ok) {
+      // AI/저장 실패 — 서버가 이미 환불 완료. 사용자에겐 실패 알림만.
+      const body = await res.json().catch(() => ({} as { credits?: number }))
+      if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
+      useDreamStore.getState().setInterpretJob(null)
+      return
+    }
 
-    const finalEntry: DreamEntry = saved ?? {
-      ...entry,
-      id: `local-${Date.now()}`,
-      date: new Date().toISOString(),
-    } as DreamEntry
+    const { dream: saved, credits } = await res.json() as { dream: DreamEntry; credits: number }
 
     const s = useDreamStore.getState()
-    s.addDream(finalEntry)
+    s.addDream(saved)
+    s.setCredits(credits)
     s.setInterpretDraft({ dream: '', moods: [] })
     s.setInterpretJob(null)
     s.setActiveTab('mydiary')
   } catch {
+    // 네트워크 실패 — 서버가 차감 전 실패면 무관, 차감 후 실패면 다음 로드 때 원복.
+    // (offline fallback 은 이후 이슈로 분리)
     useDreamStore.getState().setInterpretJob(null)
   } finally {
     if (msgTimer) clearInterval(msgTimer)
