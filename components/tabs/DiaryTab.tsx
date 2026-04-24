@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { GlobeIcon, PersonIcon } from '@/components/ui/Icons'
 import { getAvatarAsset } from '@/lib/avatar'
 import { PUBLIC_DREAMS, PublicDream } from '@/lib/sampleDreams'
+import type { FeedItem as ApiFeedItem } from '@/app/api/feed/route'
 import DreamDetailModal, { DetailEntry } from '@/components/dream/DreamDetailModal'
 import { AUSPICE_THEME, inferAuspiceFromMoods } from '@/lib/auspice'
 import MoodPill from '@/components/ui/MoodPill'
@@ -13,7 +14,13 @@ import { useT } from '@/lib/i18n'
 import { useLocalizedDream } from '@/lib/translateDream'
 import { formatShortDate } from '@/lib/formatDate'
 
-type FeedItem = (DreamEntry | PublicDream) & { isMine?: boolean; authorName?: string; authorInitial?: string }
+type FeedItem = (DreamEntry | PublicDream | ApiFeedItem) & {
+  isMine?: boolean
+  authorName?: string
+  authorInitial?: string
+  authorAvatarUrl?: string | null
+  commentCount?: number
+}
 
 const CLAMP2: React.CSSProperties = {
   display: '-webkit-box',
@@ -22,7 +29,7 @@ const CLAMP2: React.CSSProperties = {
   overflow: 'hidden',
 }
 
-const PAGE_SIZE = 4
+const PAGE_SIZE = 8
 
 function Avatar({ authorName, mine, customUrl }: { authorName: string; mine?: boolean; customUrl?: string | null }) {
   // 내 글이면 store.avatarUrl 우선, 아니면 닉네임 매핑
@@ -205,46 +212,86 @@ function FeedCard({ entry: rawEntry, index, onClick, myAvatarUrl }: { entry: Fee
 }
 
 export default function DiaryTab() {
-  const { dreams, nickname, avatarUrl } = useDreamStore()
+  const { avatarUrl } = useDreamStore()
   const [selected, setSelected] = useState<DetailEntry | null>(null)
-  const [pageCount, setPageCount] = useState(1)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const t = useT()
 
-  const mySharedDreams: FeedItem[] = dreams
-    .filter((d) => d.shared)
-    .map((d) => ({
-      ...d,
-      isMine: true,
-      authorName: nickname,
-      authorInitial: nickname.charAt(0),
-    }))
+  // 서버 피드 — shared=true 인 모든 유저의 꿈 (본인 포함). 커서 기반 페이지네이션.
+  const [serverItems, setServerItems] = useState<ApiFeedItem[]>([])
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [loadingPage, setLoadingPage] = useState(false)
+  const [firstLoaded, setFirstLoaded] = useState(false)
+  const [serverExhausted, setServerExhausted] = useState(false)
+  // 샘플 꿈은 서버가 다 떨어졌을 때 마지막에 붙여 보여주기 (페이지당 PAGE_SIZE 씩)
+  const [samplePageCount, setSamplePageCount] = useState(0)
 
-  const publicDreams: FeedItem[] = PUBLIC_DREAMS.map((d) => ({ ...d, isMine: false }))
+  const loadNextPage = async () => {
+    if (loadingPage) return
+    setLoadingPage(true)
+    try {
+      if (!serverExhausted) {
+        const params = new URLSearchParams({ limit: String(PAGE_SIZE) })
+        if (nextCursor) params.set('cursor', nextCursor)
+        const res = await fetch(`/api/feed?${params.toString()}`)
+        if (res.ok) {
+          const { items, nextCursor: nc } = await res.json() as {
+            items: ApiFeedItem[]
+            nextCursor: string | null
+          }
+          setServerItems((prev) => {
+            const seen = new Set(prev.map((x) => x.id))
+            return [...prev, ...items.filter((x) => !seen.has(x.id))]
+          })
+          setNextCursor(nc)
+          if (!nc) setServerExhausted(true)
+        } else {
+          setServerExhausted(true)
+        }
+      } else {
+        // 서버가 고갈 → 샘플을 다음 PAGE_SIZE 만큼 공개
+        setSamplePageCount((c) => c + 1)
+      }
+    } finally {
+      setLoadingPage(false)
+      setFirstLoaded(true)
+    }
+  }
 
-  const feed = [...mySharedDreams, ...publicDreams].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  )
+  // 첫 페이지 로드
+  useEffect(() => {
+    loadNextPage()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const visibleFeed = feed.slice(0, pageCount * PAGE_SIZE)
-  const hasMore = visibleFeed.length < feed.length
+  const sampleFeed: FeedItem[] = PUBLIC_DREAMS.map((d) => ({ ...d, isMine: false }))
+    .slice(0, samplePageCount * PAGE_SIZE)
+
+  const feed: FeedItem[] = [
+    ...(serverItems as FeedItem[]),
+    ...sampleFeed,
+  ]
+
+  const sampleHasMore = sampleFeed.length < PUBLIC_DREAMS.length
+  const hasMore = !serverExhausted || sampleHasMore
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
-    if (!sentinelRef.current || !hasMore) return
+    if (!sentinelRef.current || !hasMore || loadingPage) return
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setPageCount((c) => c + 1)
+          loadNextPage()
         }
       },
-      { rootMargin: '100px' }
+      { rootMargin: '160px' }
     )
     observer.observe(sentinelRef.current)
     return () => observer.disconnect()
-  }, [hasMore, visibleFeed.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loadingPage, feed.length])
 
-  if (feed.length === 0) {
+  if (firstLoaded && feed.length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '96px 0', gap: 12 }}>
         <div
@@ -271,7 +318,7 @@ export default function DiaryTab() {
         </p>
       </div>
 
-      {visibleFeed.map((entry, i) => (
+      {feed.map((entry, i) => (
         <FeedCard
           key={entry.id}
           entry={entry}
@@ -300,7 +347,7 @@ export default function DiaryTab() {
         </div>
       )}
 
-      {!hasMore && feed.length > PAGE_SIZE && (
+      {!hasMore && feed.length >= PAGE_SIZE && (
         <p style={{ textAlign: 'center', fontSize: 12, color: '#C4C0F5', padding: '16px 0 32px' }}>
           {t('feed.endMessage')}
         </p>
