@@ -108,10 +108,11 @@ export async function POST(req: Request) {
   }
   try {
     if (type === 'basic') {
-      aiData = await interpretDream(dream, moods)
+      const raw = await interpretDream(dream, moods)
+      aiData = { ...raw, moods: (raw.moods ?? []) as Mood[] }
     } else {
       const diary = await interpretDiary(dream, moods)
-      aiData = { ...diary, pages: attachImageUrls(diary.pages ?? []) }
+      aiData = { ...diary, moods: (diary.moods ?? []) as Mood[], pages: attachImageUrls(diary.pages ?? []) }
     }
   } catch (e) {
     console.error('[interpret/run] AI failed:', e)

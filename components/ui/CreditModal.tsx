@@ -27,7 +27,6 @@ interface PaymentMethod {
   color: string
   initial: string
   logoUrl: string
-  comingSoon?: boolean
 }
 
 // 로고 소스:
@@ -50,7 +49,6 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#1652F0',
     initial: 'C',
     logoUrl: 'https://cdn.simpleicons.org/coinbase/FFFFFF',
-    comingSoon: true,
   },
   {
     id: 'bitpay',
@@ -59,16 +57,14 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#1A2A44',
     initial: 'Ƀ',
     logoUrl: 'https://framerusercontent.com/images/2iIIkkV5Qoskq2dfhwja8G8rFW0.png',
-    comingSoon: true,
   },
   {
     id: 'stripe',
-    label: 'Stripe Crypto',
+    label: 'Stripe',
     subKey: 'credit.pm.stripe.sub',
     color: '#635BFF',
     initial: 'S',
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
-    comingSoon: true,
   },
   {
     id: 'binance',
@@ -77,7 +73,6 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#F3BA2F',
     initial: 'ß',
     logoUrl: 'https://cdn.simpleicons.org/binance/FFFFFF',
-    comingSoon: true,
   },
 ]
 
@@ -202,16 +197,6 @@ export default function CreditModal() {
     setStep('pay')
   }
 
-  const handleMockPay = (payment: PaymentMethod) => {
-    if (!picked) return
-    addCredits(picked.credits, {
-      type: 'purchase',
-      label: `${t(picked.labelKey)}${t('credit.pkg.suffix')} · ${payment.label}`,
-      priceWon: picked.price,
-    })
-    setCreditModalOpen(false)
-  }
-
   const handleBasePay = async () => {
     if (!picked) return
     setPayError(null)
@@ -317,6 +302,28 @@ export default function CreditModal() {
     }
   }
 
+  const handleCoinbase = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('coinbase')
+    try {
+      const res = await fetch('/api/payment/coinbase/create-charge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok || !body.checkoutUrl) {
+        throw new Error(body.error ?? t('credit.err.invoice'))
+      }
+      window.location.href = body.checkoutUrl
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
+      setPayError(msg)
+      setPayingId(null)
+    }
+  }
+
   const handleBitPay = async () => {
     if (!picked) return
     setPayError(null)
@@ -342,12 +349,12 @@ export default function CreditModal() {
 
   const handlePay = (payment: PaymentMethod) => {
     if (payingId) return  // 이미 진행 중이면 무시
-    if (payment.comingSoon) {
-      setToast(`${payment.label}${t('credit.comingSoonToast')}`)
-      return
-    }
     if (payment.id === 'base') {
       handleBasePay()
+      return
+    }
+    if (payment.id === 'coinbase') {
+      handleCoinbase()
       return
     }
     if (payment.id === 'bitpay') {
@@ -362,8 +369,6 @@ export default function CreditModal() {
       handleBinance()
       return
     }
-    // 나머지 결제수단은 아직 프로토타입
-    handleMockPay(payment)
   }
 
   const handleViewHistory = () => {
@@ -644,8 +649,7 @@ export default function CreditModal() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                       {PAYMENTS.map((pm) => {
                         const busy = payingId === pm.id
-                        const comingSoon = !!pm.comingSoon
-                        const disabled = !!payingId  // comingSoon 은 onClick 허용 → 토스트
+                        const disabled = !!payingId
                         return (
                           <button
                             key={pm.id}
@@ -661,8 +665,7 @@ export default function CreditModal() {
                               background: 'rgba(255,255,255,0.04)',
                               border: '1px solid rgba(255,255,255,0.08)',
                               cursor: disabled ? 'not-allowed' : 'pointer',
-                              opacity: comingSoon ? 0.72 : (disabled && !busy ? 0.5 : 1),
-                              filter: comingSoon ? 'grayscale(0.15)' : 'none',
+                              opacity: disabled && !busy ? 0.5 : 1,
                               transition: 'background 0.15s, border-color 0.15s',
                             }}
                             onMouseEnter={(e) => {
@@ -680,12 +683,7 @@ export default function CreditModal() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
                               <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 {pm.label}
-                                {comingSoon && (
-                                  <span style={{ fontSize: 10, fontWeight: 700, color: '#8890B0', background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 999, letterSpacing: 0.3 }}>
-                                    {t('credit.comingSoon')}
-                                  </span>
-                                )}
-                                {!comingSoon && ((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')
+                                {((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')
                                   || (pm.id === 'bitpay' && process.env.NEXT_PUBLIC_BITPAY_TESTNET === 'true')) && (
                                   <span style={{ fontSize: 10, fontWeight: 700, color: '#C4C0F5', background: 'rgba(127,119,221,0.18)', padding: '2px 6px', borderRadius: 999 }}>
                                     TESTNET
