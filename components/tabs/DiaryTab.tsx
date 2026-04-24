@@ -4,6 +4,7 @@ import { useDreamStore } from '@/store/dreamStore'
 import { DreamEntry } from '@/types'
 import { motion } from 'framer-motion'
 import { GlobeIcon, PersonIcon } from '@/components/ui/Icons'
+import { SectionTitle, EmptyState, LoadingDots } from '@/components/ui/primitives'
 import { getAvatarAsset } from '@/lib/avatar'
 import { PUBLIC_DREAMS, PublicDream } from '@/lib/sampleDreams'
 import type { FeedItem as ApiFeedItem } from '@/app/api/feed/route'
@@ -293,30 +294,17 @@ export default function DiaryTab() {
 
   if (firstLoaded && feed.length === 0) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '96px 0', gap: 12 }}>
-        <div
-          style={{
-            width: 56, height: 56, borderRadius: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(127,119,221,0.1)',
-          }}
-        >
-          <GlobeIcon size={28} style={{ color: '#555E80' }} />
-        </div>
-        <p style={{ fontSize: 14, fontWeight: 500, color: '#8890B0' }}>{t('feed.empty.title')}</p>
-        <p style={{ fontSize: 12, color: '#3C4260' }}>{t('feed.empty.hint')}</p>
-      </div>
+      <EmptyState
+        icon={<GlobeIcon size={28} style={{ color: '#555E80' }} />}
+        title={t('feed.empty.title')}
+        hint={t('feed.empty.hint')}
+      />
     )
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 48 }}>
-      <div style={{ padding: '0 4px', marginBottom: 4 }}>
-        <p style={{ fontSize: 20, fontWeight: 700, color: '#E8E8F4' }}>{t('feed.title')}</p>
-        <p style={{ fontSize: 13, color: '#8890B0', marginTop: 4 }}>
-          {t('feed.subtitle')}
-        </p>
-      </div>
+      <SectionTitle title={t('feed.title')} subtitle={t('feed.subtitle')} />
 
       {feed.map((entry, i) => (
         <FeedCard
@@ -331,19 +319,7 @@ export default function DiaryTab() {
       {/* Infinite scroll sentinel */}
       {hasMore && (
         <div ref={sentinelRef} style={{ padding: '20px 0', textAlign: 'center' }}>
-          <div style={{ display: 'inline-flex', gap: 6 }}>
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                style={{
-                  width: 6, height: 6, borderRadius: '50%',
-                  background: '#7F77DD',
-                  animation: `twinkle 1.1s ease-in-out infinite`,
-                  animationDelay: `${i * 0.25}s`,
-                }}
-              />
-            ))}
-          </div>
+          <LoadingDots />
         </div>
       )}
 

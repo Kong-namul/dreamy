@@ -3,15 +3,47 @@
 @import "tailwindcss";
 
 :root {
+  /* Core palette */
   --bg-deep: #05080F;
   --bg-navy: #0A1128;
   --bg-surface: #111A3A;
   --purple: #7F77DD;
+  --purple-soft: #C4C0F5;
   --blue-glow: #4A7AFF;
   --pink: #D4537E;
-  --text: #E8E8F4;
-  --subtext: #8890B0;
+  --red-soft: #E8899A;
 
+  /* Text */
+  --text: #E8E8F4;
+  --text-dim: #C0C4DC;
+  --subtext: #8890B0;
+  --subtext-dim: #6B739A;
+  --hint: #555E80;
+  --placeholder: #3C4260;
+
+  /* Surfaces */
+  --card-bg: rgba(17, 26, 58, 0.7);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --purple-tint-12: rgba(127, 119, 221, 0.12);
+  --purple-tint-22: rgba(127, 119, 221, 0.22);
+  --purple-tint-30: rgba(127, 119, 221, 0.30);
+  --purple-border: rgba(127, 119, 221, 0.40);
+
+  /* Radii */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-pill: 9999px;
+
+  /* Shadows / glows */
+  --glow-purple: 0 0 20px rgba(127, 119, 221, 0.35);
+  --glow-pink: 0 0 20px rgba(212, 83, 126, 0.35);
+
+  /* Motion */
+  --duration-fast: 0.15s;
+  --duration-mid: 0.22s;
+
+  /* Cloud layer */
   --cloud-back-blur: 12px;
   --cloud-back-opacity: 0.1;
   --cloud-mid-blur: 11px;
