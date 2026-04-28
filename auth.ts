@@ -8,6 +8,12 @@ const hasGoogleCredentials =
   !!process.env.GOOGLE_CLIENT_SECRET &&
   process.env.GOOGLE_CLIENT_SECRET !== 'your_google_client_secret'
 
+// Mock 로그인은 운영 배포에서 살아있으면 누구나 mock-user-001 로 들어올 수 있어
+// 치명적이다. 명시적으로 ENABLE_MOCK_AUTH=true 가 설정된 비프로덕션 환경에서만 활성화.
+const enableMockAuth =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.ENABLE_MOCK_AUTH === 'true'
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
     ...(hasGoogleCredentials
@@ -21,19 +27,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }),
         ]
       : []),
-    Credentials({
-      id: 'mock-google',
-      name: 'Google',
-      credentials: {},
-      async authorize() {
-        return {
-          id: 'mock-user-001',
-          name: '꿈꾸는 사람',
-          email: 'dreamer@dreamy.app',
-          image: null,
-        }
-      },
-    }),
+    ...(enableMockAuth
+      ? [
+          Credentials({
+            id: 'mock-google',
+            name: 'Google',
+            credentials: {},
+            async authorize() {
+              return {
+                id: 'mock-user-001',
+                name: '꿈꾸는 사람',
+                email: 'dreamer@dreamy.app',
+                image: null,
+              }
+            },
+          }),
+        ]
+      : []),
   ],
   pages: {
     signIn: '/',

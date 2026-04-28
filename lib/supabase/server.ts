@@ -3,6 +3,7 @@
  * 모든 테이블에 RLS 를 우회하여 접근 가능. API 라우트·서버 컴포넌트 전용.
  * 브라우저로 import 금지.
  */
+import 'server-only'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 let cached: SupabaseClient | null = null

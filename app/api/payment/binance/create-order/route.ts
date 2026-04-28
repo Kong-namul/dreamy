@@ -74,7 +74,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: insertErr?.message ?? 'insert failed' }, { status: 500 })
   }
 
-  const origin = req.headers.get('origin') ?? 'https://dreamy-tau.vercel.app'
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dreamy-tau.vercel.app'
   const payload = {
     env: { terminalType: 'WEB' },
     merchantTradeNo: paymentRow.id.replace(/-/g, ''),   // 32자, uuid 하이픈 제거

@@ -30,6 +30,9 @@ export const maxDuration = 60
 const COST = { basic: 5, premium: 15 } as const
 const LABEL = { basic: '기본 해석', premium: '그림일기' } as const
 
+// 모바일 실수 붙여넣기·악성 긴 입력으로 Claude 비용이 폭주하는 걸 막기 위한 상한.
+const MAX_DREAM_LENGTH = 3000
+
 // 현재 유저 locale 은 요청 바디로 받아서 source_locale 태깅에 사용 (자동 번역의 기반).
 type RunBody = {
   type?: 'basic' | 'premium'
@@ -53,6 +56,12 @@ export async function POST(req: Request) {
 
   if (!dream.trim()) {
     return NextResponse.json({ error: '꿈 내용을 입력해주세요.' }, { status: 400 })
+  }
+  if (dream.length > MAX_DREAM_LENGTH) {
+    return NextResponse.json(
+      { error: `꿈 내용은 ${MAX_DREAM_LENGTH}자 이하로 입력해주세요.` },
+      { status: 400 },
+    )
   }
 
   const supa = supabaseServer()

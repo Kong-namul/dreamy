@@ -52,7 +52,9 @@ export async function POST(req: Request) {
   }
 
   const stripe = stripeClient()
-  const origin = req.headers.get('origin') ?? 'https://dreamy-tau.vercel.app'
+  // origin 헤더는 클라이언트가 위변조 가능하므로 redirect URL 에는 사용하지 않는다.
+  // 운영 URL 은 NEXT_PUBLIC_APP_URL 로 고정, 로컬 개발 시 .env.local 로 덮어쓴다.
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dreamy-tau.vercel.app'
 
   try {
     const checkout = await stripe.checkout.sessions.create({

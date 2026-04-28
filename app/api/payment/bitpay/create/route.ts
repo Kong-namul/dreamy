@@ -63,7 +63,7 @@ export async function POST(req: Request) {
   }
 
   // BitPay invoice 생성
-  const origin = req.headers.get('origin') ?? 'https://dreamy-tau.vercel.app'
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dreamy-tau.vercel.app'
   const invoicePayload = {
     token: BITPAY_API_TOKEN,
     price: pkg.priceUsdCents / 100,

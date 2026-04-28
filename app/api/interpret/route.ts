@@ -1,21 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { interpretDream } from '@/lib/claude'
+import { NextResponse } from 'next/server'
 
-export async function POST(req: NextRequest) {
-  try {
-    const { dream, moods } = await req.json()
-    if (!dream?.trim()) {
-      return NextResponse.json({ error: '꿈 내용을 입력해주세요.' }, { status: 400 })
-    }
-    const result = await interpretDream(dream, Array.isArray(moods) ? moods : [])
-    return NextResponse.json(result)
-  } catch (e) {
-    console.error('[interpret] error:', e)
-    return NextResponse.json({
-      error: 'AI 해석 중 오류가 발생했어요.',
-      interpretation: '해석을 불러오지 못했어요. 잠시 후 다시 시도해주세요.',
-      auspice: 'neutral',
-      moods: [],
-    }, { status: 500 })
-  }
+// 구 엔드포인트. 인증/크레딧 차감/길이 제한 없이 Claude 를 호출해 비용 폭주 위험이 있어 폐기.
+// 정식 흐름은 POST /api/interpret/run.
+export async function POST() {
+  return NextResponse.json(
+    { error: 'gone', message: 'Use POST /api/interpret/run instead.' },
+    { status: 410 },
+  )
 }

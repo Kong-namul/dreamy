@@ -86,12 +86,24 @@ function makePlaceholderSvg(prompt: string, seed: string, w: number, h: number):
   </svg>`
 }
 
+// 비정상 값으로 외부 API 비용·메모리를 폭주시키는 걸 막는 입력 가드.
+const MIN_DIM = 256
+const MAX_DIM = 1024
+const MAX_PROMPT_LEN = 500
+const MAX_SEED_LEN = 32
+function clampDim(raw: string | null, fallback: number): number {
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return fallback
+  return Math.max(MIN_DIM, Math.min(MAX_DIM, Math.round(n)))
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const prompt = (searchParams.get('p') ?? 'dream').trim()
-  const seed = searchParams.get('s') ?? '0'
-  const width = searchParams.get('w') ?? '640'
-  const height = searchParams.get('h') ?? '400'
+  const rawPrompt = (searchParams.get('p') ?? 'dream').trim()
+  const prompt = rawPrompt.slice(0, MAX_PROMPT_LEN) || 'dream'
+  const seed = (searchParams.get('s') ?? '0').slice(0, MAX_SEED_LEN)
+  const width = String(clampDim(searchParams.get('w'), 640))
+  const height = String(clampDim(searchParams.get('h'), 400))
 
   const key = cacheKey(prompt, seed, width, height)
 
@@ -112,15 +124,17 @@ export async function GET(req: NextRequest) {
   const encoded = encodeURIComponent(composed)
 
   // 2) Pollinations turbo
+  // 외부 fetch 타임아웃은 한 요청당 합계 ~40s 로 제한 (turbo 20s + flux 20s).
+  // 길게 잡으면 단일 악성 요청이 서버리스 함수를 점유해 비용·동시성 압박이 커진다.
   const turboUrl = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=turbo&nologo=true&seed=${seed}`
-  let bytes = await tryPollinations(turboUrl, 45000)
+  let bytes = await tryPollinations(turboUrl, 20000)
   let source: 'turbo' | 'flux' | 'placeholder' = 'turbo'
 
   // 3) Pollinations flux (품질 좋으나 느림)
   if (!bytes) {
     source = 'flux'
     const fluxUrl = `https://image.pollinations.ai/prompt/${encoded}?width=${width}&height=${height}&model=flux&nologo=true&seed=${seed}`
-    bytes = await tryPollinations(fluxUrl, 50000)
+    bytes = await tryPollinations(fluxUrl, 20000)
   }
 
   if (bytes) {

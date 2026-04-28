@@ -56,42 +56,23 @@ export async function POST(req: Request) {
 
   const supa = supabaseServer()
 
-  const { data: payment } = await supa
-    .from('payments')
-    .select('id, user_id, credits, status')
-    .eq('method', 'stripe')
-    .eq('provider_payment_id', session.id)
-    .maybeSingle()
+  // payments confirm + credits 가산 + tx insert 를 RPC 한 번으로 원자화.
+  // webhook 재전송·동시 호출 시 row lock + idempotent confirmed 분기로 중복 지급을 막는다.
+  const label = `크레딧 구매 · Stripe${isStripeTestMode() ? ' (Test)' : ''}`
+  const { data: rpcResult, error: rpcErr } = await supa.rpc('confirm_stripe_payment', {
+    p_session_id: session.id,
+    p_label: label,
+  })
 
-  if (!payment) {
+  if (rpcErr) {
+    return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  }
+  if (typeof rpcResult !== 'number') {
+    return NextResponse.json({ error: 'rpc error' }, { status: 500 })
+  }
+  if (rpcResult < 0) {
     return NextResponse.json({ error: 'payment row not found' }, { status: 404 })
   }
 
-  if (payment.status === 'confirmed') {
-    return NextResponse.json({ ok: true, alreadyProcessed: true })
-  }
-
-  const nowIso = new Date().toISOString()
-
-  await supa
-    .from('payments')
-    .update({ status: 'confirmed', confirmed_at: nowIso })
-    .eq('id', payment.id)
-
-  const { data: userRow } = await supa
-    .from('users')
-    .select('credits')
-    .eq('id', payment.user_id)
-    .maybeSingle()
-  const newCredits = (userRow?.credits ?? 0) + payment.credits
-
-  await supa.from('users').update({ credits: newCredits }).eq('id', payment.user_id)
-  await supa.from('credit_transactions').insert({
-    user_id: payment.user_id,
-    type: 'purchase',
-    amount: payment.credits,
-    label: `크레딧 구매 · Stripe${isStripeTestMode() ? ' (Test)' : ''}`,
-  })
-
-  return NextResponse.json({ ok: true, credits: newCredits })
+  return NextResponse.json({ ok: true, credits: rpcResult })
 }

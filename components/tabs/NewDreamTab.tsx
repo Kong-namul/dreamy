@@ -165,6 +165,7 @@ export default function NewDreamTab() {
                   value={dream}
                   onChange={(e) => setDream(e.target.value)}
                   placeholder={t('new.placeholder')}
+                  maxLength={3000}
                   style={{
                     width: '100%',
                     background: 'transparent',
