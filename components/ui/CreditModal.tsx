@@ -67,6 +67,14 @@ const PAYMENTS: PaymentMethod[] = [
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
   },
   {
+    id: 'stripe_crypto',
+    label: 'Stripe Stablecoin',
+    subKey: 'credit.pm.stripeCrypto.sub',
+    color: '#635BFF',
+    initial: 'S',
+    logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
+  },
+  {
     id: 'stripe_onramp',
     label: 'Stripe Crypto',
     subKey: 'credit.pm.stripeOnramp.sub',
@@ -315,6 +323,40 @@ export default function CreditModal() {
     }
   }
 
+  const handleStripeCrypto = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('stripe_crypto')
+
+    const newTab = window.open('', '_blank')
+
+    try {
+      const res = await fetch('/api/payment/stripe/create-crypto-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok || !body.checkoutUrl) {
+        newTab?.close()
+        throw new Error(body.error ?? t('credit.err.cryptoSession'))
+      }
+      if (newTab) {
+        newTab.location.href = body.checkoutUrl
+      } else {
+        setPayError(t('credit.err.popup'))
+        setPayingId(null)
+        return
+      }
+      setPayingId(null)
+    } catch (err) {
+      newTab?.close()
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
+      setPayError(msg)
+      setPayingId(null)
+    }
+  }
+
   const handleStripeOnramp = async () => {
     if (!picked) return
     setPayError(null)
@@ -435,6 +477,10 @@ export default function CreditModal() {
     }
     if (payment.id === 'stripe') {
       handleStripe()
+      return
+    }
+    if (payment.id === 'stripe_crypto') {
+      handleStripeCrypto()
       return
     }
     if (payment.id === 'stripe_onramp') {
