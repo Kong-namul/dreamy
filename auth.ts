@@ -8,11 +8,11 @@ const hasGoogleCredentials =
   !!process.env.GOOGLE_CLIENT_SECRET &&
   process.env.GOOGLE_CLIENT_SECRET !== 'your_google_client_secret'
 
-// Mock 로그인은 운영 배포에서 살아있으면 누구나 mock-user-001 로 들어올 수 있어
-// 치명적이다. 명시적으로 ENABLE_MOCK_AUTH=true 가 설정된 비프로덕션 환경에서만 활성화.
-const enableMockAuth =
-  process.env.NODE_ENV !== 'production' &&
-  process.env.ENABLE_MOCK_AUTH === 'true'
+// Mock 로그인은 살아있으면 누구나 mock-user-001 로 들어올 수 있어 치명적이다.
+// 명시적으로 ENABLE_MOCK_AUTH=true 가 설정된 환경에서만 활성화.
+// (운영에서 절대 켜지지 않게 하려면 Vercel Production 환경변수에서 이 값을 비워둘 것.
+//  실제 Google OAuth 가 준비되면 이 토글을 영구 제거 권장.)
+const enableMockAuth = process.env.ENABLE_MOCK_AUTH === 'true'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
