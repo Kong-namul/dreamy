@@ -257,6 +257,11 @@ export default function CreditModal() {
     if (!picked) return
     setPayError(null)
     setPayingId('stripe')
+
+    // async 함수 안에서 window.open 하면 브라우저가 팝업 차단 + 현재 탭도 이동시키는 버그 발생.
+    // fetch 전에 동기적으로 새 탭 먼저 열고, URL 받아서 거기로 보내는 방식으로 해결.
+    const newTab = window.open('', '_blank')
+
     try {
       const res = await fetch('/api/payment/stripe/create-session', {
         method: 'POST',
@@ -265,17 +270,20 @@ export default function CreditModal() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok || !body.checkoutUrl) {
+        newTab?.close()
         throw new Error(body.error ?? t('credit.err.session'))
       }
-      const checkout = window.open(body.checkoutUrl, '_blank', 'noopener,noreferrer')
-      if (!checkout) {
-        // 팝업 차단된 경우 — 현재 페이지는 유지하고 링크로 안내
+      if (newTab) {
+        newTab.location.href = body.checkoutUrl
+      } else {
+        // 팝업 차단된 경우 — 현재 페이지는 유지하고 안내
         setPayError('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해 주세요.')
         setPayingId(null)
         return
       }
       setPayingId(null)
     } catch (err) {
+      newTab?.close()
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
       setPayingId(null)
