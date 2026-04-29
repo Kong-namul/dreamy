@@ -72,44 +72,27 @@ export async function POST(req: Request) {
 
   const { data: payment } = await supa
     .from('payments')
-    .select('id, user_id, credits, status')
+    .select('id')
     .eq('id', paymentId)
+    .eq('provider_payment_id', chargeId)
     .maybeSingle()
 
   if (!payment) {
     return NextResponse.json({ error: 'payment not found' }, { status: 404 })
   }
 
-  if (payment.status === 'confirmed') {
-    return NextResponse.json({ ok: true, alreadyProcessed: true })
-  }
-
   const txId = event.data?.payments?.[0]?.transaction_id ?? null
-  const nowIso = new Date().toISOString()
 
-  await supa
-    .from('payments')
-    .update({
-      status: 'confirmed',
-      provider_tx_hash: txId,
-      confirmed_at: nowIso,
-    })
-    .eq('id', payment.id)
-
-  const { data: userRow } = await supa
-    .from('users')
-    .select('credits')
-    .eq('id', payment.user_id)
-    .maybeSingle()
-  const newCredits = (userRow?.credits ?? 0) + payment.credits
-
-  await supa.from('users').update({ credits: newCredits }).eq('id', payment.user_id)
-  await supa.from('credit_transactions').insert({
-    user_id: payment.user_id,
-    type: 'purchase',
-    amount: payment.credits,
-    label: '크레딧 구매 · Coinbase Commerce',
+  const { data: credits, error: rpcErr } = await supa.rpc('confirm_payment_by_provider', {
+    p_method: 'coinbase_commerce',
+    p_provider_payment_id: chargeId,
+    p_provider_tx_hash: txId,
+    p_label: '크레딧 구매 · Coinbase Commerce',
   })
 
-  return NextResponse.json({ ok: true, credits: newCredits })
+  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  if (typeof credits !== 'number') return NextResponse.json({ error: 'rpc error' }, { status: 500 })
+  if (credits < 0) return NextResponse.json({ error: 'payment row not found' }, { status: 404 })
+
+  return NextResponse.json({ ok: true, credits })
 }

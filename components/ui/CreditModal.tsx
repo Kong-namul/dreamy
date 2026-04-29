@@ -267,7 +267,12 @@ export default function CreditModal() {
       if (!res.ok || !body.checkoutUrl) {
         throw new Error(body.error ?? t('credit.err.session'))
       }
-      window.location.href = body.checkoutUrl
+      const checkout = window.open(body.checkoutUrl, '_blank', 'noopener,noreferrer')
+      if (!checkout) {
+        window.location.assign(body.checkoutUrl)
+        return
+      }
+      setPayingId(null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
@@ -294,7 +299,7 @@ export default function CreditModal() {
       if (!target) {
         throw new Error(t('credit.err.noLink'))
       }
-      window.location.href = target
+      window.location.assign(target)
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
@@ -316,7 +321,7 @@ export default function CreditModal() {
       if (!res.ok || !body.checkoutUrl) {
         throw new Error(body.error ?? t('credit.err.invoice'))
       }
-      window.location.href = body.checkoutUrl
+      window.location.assign(body.checkoutUrl)
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
@@ -339,7 +344,7 @@ export default function CreditModal() {
         throw new Error(body.error ?? t('credit.err.invoice'))
       }
       // BitPay 호스팅 체크아웃으로 리다이렉트 — 결제 완료 시 /payment/success 로 복귀
-      window.location.href = body.checkoutUrl
+      window.location.assign(body.checkoutUrl)
     } catch (err) {
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)

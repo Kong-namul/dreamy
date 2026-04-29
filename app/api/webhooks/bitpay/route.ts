@@ -86,46 +86,25 @@ export async function POST(req: Request) {
 
   const { data: paymentRow, error: pErr } = await supa
     .from('payments')
-    .select('id, user_id, credits, status')
+    .select('id')
     .eq('id', invoice.orderId)
     .maybeSingle()
   if (pErr || !paymentRow) {
     return NextResponse.json({ error: 'payment not found' }, { status: 404 })
   }
 
-  if (paymentRow.status === 'confirmed') {
-    return NextResponse.json({ ok: true, alreadyProcessed: true })
-  }
-
   const txHash = invoice.transactions?.[0]?.txid ?? null
-  const nowIso = new Date().toISOString()
 
-  // confirm payment
-  const { error: updPayErr } = await supa
-    .from('payments')
-    .update({
-      status: 'confirmed',
-      provider_tx_hash: txHash,
-      confirmed_at: nowIso,
-    })
-    .eq('id', paymentRow.id)
-  if (updPayErr) return NextResponse.json({ error: updPayErr.message }, { status: 500 })
-
-  // grant credits
-  const { data: userRow } = await supa
-    .from('users')
-    .select('credits')
-    .eq('id', paymentRow.user_id)
-    .maybeSingle()
-  const newCredits = (userRow?.credits ?? 0) + paymentRow.credits
-
-  await supa.from('users').update({ credits: newCredits }).eq('id', paymentRow.user_id)
-  await supa.from('credit_transactions').insert({
-    user_id: paymentRow.user_id,
-    type: 'purchase',
-    amount: paymentRow.credits,
-    label: `크레딧 구매 · BitPay${BITPAY_API_BASE.includes('test.') ? ' (Testnet)' : ''}`,
+  const { data: credits, error: rpcErr } = await supa.rpc('confirm_payment_by_provider', {
+    p_method: 'bitpay',
+    p_provider_payment_id: invoice.id,
+    p_provider_tx_hash: txHash,
+    p_label: `크레딧 구매 · BitPay${BITPAY_API_BASE.includes('test.') ? ' (Testnet)' : ''}`,
   })
 
-  return NextResponse.json({ ok: true, credits: newCredits })
+  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  if (typeof credits !== 'number') return NextResponse.json({ error: 'rpc error' }, { status: 500 })
+  if (credits < 0) return NextResponse.json({ error: 'payment row not found' }, { status: 404 })
+
+  return NextResponse.json({ ok: true, credits })
 }

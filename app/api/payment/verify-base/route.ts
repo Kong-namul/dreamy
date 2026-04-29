@@ -53,17 +53,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'user not found' }, { status: 404 })
   }
 
-  // 중복 처리 가드: 같은 baseId 가 이미 confirmed 이면 no-op 반환
-  const { data: existing } = await supa
-    .from('payments')
-    .select('id, status, credits')
-    .eq('method', 'base_pay')
-    .eq('provider_payment_id', baseId)
-    .maybeSingle()
-  if (existing?.status === 'confirmed') {
-    return NextResponse.json({ ok: true, alreadyProcessed: true, credits: user.credits })
-  }
-
   // Base Pay status 조회 (SDK 내부적으로 Base RPC / API 에 쿼리)
   let status
   try {
@@ -100,9 +89,9 @@ export async function POST(req: Request) {
     )
   }
 
-  const nowIso = new Date().toISOString()
-
-  // payments row upsert (pending 있었으면 confirm, 없었으면 새로 생성)
+  // payments row 를 pending 으로 먼저 확보한다.
+  // 같은 baseId 동시 요청은 unique(method, provider_payment_id) 로 한 row 만 남기고,
+  // 실제 confirm + credit grant 는 아래 RPC 가 row lock 으로 멱등 처리한다.
   const { data: paymentRow, error: upsertErr } = await supa
     .from('payments')
     .upsert(
@@ -112,40 +101,34 @@ export async function POST(req: Request) {
         method: 'base_pay',
         credits: pkg.credits,
         amount_usd_cents: pkg.priceUsdCents,
-        status: 'confirmed',
+        status: 'pending',
         provider_payment_id: baseId,
-        confirmed_at: nowIso,
       },
-      { onConflict: 'method,provider_payment_id' },
+      { onConflict: 'method,provider_payment_id', ignoreDuplicates: true },
     )
     .select('id')
-    .single()
+    .maybeSingle()
 
-  if (upsertErr || !paymentRow) {
+  if (upsertErr) {
     return NextResponse.json({ error: upsertErr?.message ?? 'upsert failed' }, { status: 500 })
   }
 
-  // 크레딧 지급 + 트랜잭션 기록 (간단한 2단계. 실패 시 부분 반영 가능성은
-  // MVP 단계에서 허용. Phase 2 에서 RPC/stored procedure 로 원자화 예정.)
-  const newCredits = user.credits + pkg.credits
-  const { error: updErr } = await supa
-    .from('users')
-    .update({ credits: newCredits })
-    .eq('id', user.id)
-  if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
-
-  await supa.from('credit_transactions').insert({
-    user_id: user.id,
-    type: 'purchase',
-    amount: pkg.credits,
-    label: `${pkg.label} 팩 · Base Pay`,
-    price_won: pkg.priceKrw,
+  const { data: credits, error: rpcErr } = await supa.rpc('confirm_payment_by_provider', {
+    p_method: 'base_pay',
+    p_provider_payment_id: baseId,
+    p_provider_tx_hash: baseId,
+    p_label: `${pkg.label} 팩 · Base Pay`,
+    p_price_won: pkg.priceKrw,
   })
+
+  if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+  if (typeof credits !== 'number') return NextResponse.json({ error: 'rpc error' }, { status: 500 })
+  if (credits < 0) return NextResponse.json({ error: 'payment row not found' }, { status: 404 })
 
   return NextResponse.json({
     ok: true,
-    credits: newCredits,
-    paymentId: paymentRow.id,
+    credits,
+    paymentId: paymentRow?.id,
     packageCredits: pkg.credits,
   })
 }

@@ -40,7 +40,7 @@ function DreamCard({ entry: rawEntry, index, onClick, onToggleShared, onDelete }
   onToggleShared: (e: React.MouseEvent) => void
   onDelete: (e: React.MouseEvent) => void
 }) {
-  const { entry, translating } = useLocalizedDream(rawEntry)
+  const { entry } = useLocalizedDream(rawEntry)
   const t = useT()
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]

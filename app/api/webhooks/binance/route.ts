@@ -73,11 +73,11 @@ export async function POST(req: Request) {
   const supa = supabaseServer()
 
   // prepayId 매칭 우선, 없으면 merchantTradeNo (uuid no-hyphen) 로 찾음
-  let paymentRow: { id: string; user_id: string; credits: number; status: string } | null = null
+  let paymentRow: { id: string; provider_payment_id: string | null } | null = null
   if (data.prepayId) {
     const { data: row } = await supa
       .from('payments')
-      .select('id, user_id, credits, status')
+      .select('id, provider_payment_id')
       .eq('method', 'binance_pay')
       .eq('provider_payment_id', data.prepayId)
       .maybeSingle()
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       data.merchantTradeNo.slice(20)
     const { data: row } = await supa
       .from('payments')
-      .select('id, user_id, credits, status')
+      .select('id, provider_payment_id')
       .eq('id', uuid)
       .maybeSingle()
     paymentRow = row
@@ -104,35 +104,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ returnCode: 'FAIL', returnMessage: 'payment row not found' }, { status: 404 })
   }
 
-  if (paymentRow.status === 'confirmed') {
-    return NextResponse.json({ returnCode: 'SUCCESS', returnMessage: null })
+  const providerPaymentId = data.prepayId ?? paymentRow.provider_payment_id
+  if (!providerPaymentId) {
+    return NextResponse.json({ returnCode: 'FAIL', returnMessage: 'missing provider payment id' }, { status: 400 })
   }
 
-  const nowIso = new Date().toISOString()
-
-  await supa
-    .from('payments')
-    .update({
-      status: 'confirmed',
-      provider_tx_hash: data.transactionId ?? null,
-      confirmed_at: nowIso,
-    })
-    .eq('id', paymentRow.id)
-
-  const { data: userRow } = await supa
-    .from('users')
-    .select('credits')
-    .eq('id', paymentRow.user_id)
-    .maybeSingle()
-  const newCredits = (userRow?.credits ?? 0) + paymentRow.credits
-
-  await supa.from('users').update({ credits: newCredits }).eq('id', paymentRow.user_id)
-  await supa.from('credit_transactions').insert({
-    user_id: paymentRow.user_id,
-    type: 'purchase',
-    amount: paymentRow.credits,
-    label: 'USDT 크레딧 구매 · Binance Pay',
+  const { data: credits, error: rpcErr } = await supa.rpc('confirm_payment_by_provider', {
+    p_method: 'binance_pay',
+    p_provider_payment_id: providerPaymentId,
+    p_provider_tx_hash: data.transactionId ?? null,
+    p_label: 'USDT 크레딧 구매 · Binance Pay',
   })
+
+  if (rpcErr) {
+    return NextResponse.json({ returnCode: 'FAIL', returnMessage: rpcErr.message }, { status: 500 })
+  }
+  if (typeof credits !== 'number' || credits < 0) {
+    return NextResponse.json({ returnCode: 'FAIL', returnMessage: 'payment row not found' }, { status: 404 })
+  }
 
   return NextResponse.json({ returnCode: 'SUCCESS', returnMessage: null })
 }
