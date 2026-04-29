@@ -165,14 +165,6 @@ function FeedCard({ entry: rawEntry, index, onClick, myAvatarUrl }: { entry: Fee
               {t('badge.premium')}
             </span>
           )}
-          {translating && (
-            <span style={{
-              padding: '3px 10px', borderRadius: 999, fontSize: 10, fontWeight: 600,
-              background: 'rgba(127,119,221,0.12)', color: '#8890B0', letterSpacing: 0.3,
-            }}>
-              {t('action.translating')}
-            </span>
-          )}
         </div>
       </div>
 

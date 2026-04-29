@@ -9,7 +9,7 @@ import { useDreamStore } from '@/store/dreamStore'
 import { useState, useEffect } from 'react'
 import { DreamComment } from '@/types'
 import { useLocalizedComment } from '@/lib/translateComment'
-import { useT, t as tt } from '@/lib/i18n'
+import { useT } from '@/lib/i18n'
 import { useLocalizedDream } from '@/lib/translateDream'
 import { formatShortDate, formatLongDate } from '@/lib/formatDate'
 
@@ -41,9 +41,15 @@ interface Props {
 
 export default function DreamDetailModal({ entry, onClose }: Props) {
   useBodyScrollLock(entry !== null)
+  if (!entry) return null
+  return <DreamDetailModalContent entry={entry} onClose={onClose} />
+}
+
+function DreamDetailModalContent({ entry, onClose }: { entry: DetailEntry; onClose: () => void }) {
+  const { entry: localizedEntry, translating } = useLocalizedDream(entry)
   return (
     <AnimatePresence>
-      {entry && (
+      {(
         <div
           style={{
             position: 'fixed',
@@ -88,7 +94,7 @@ export default function DreamDetailModal({ entry, onClose }: Props) {
             }}
           >
             {/* Fixed header */}
-            <DetailHeader entry={entry} onClose={onClose} />
+            <DetailHeader entry={localizedEntry} onClose={onClose} translating={translating} />
 
             {/* Scrollable middle with top/bottom gradient fade */}
             <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -103,7 +109,7 @@ export default function DreamDetailModal({ entry, onClose }: Props) {
                   flex: 1,
                 }}
               >
-                <DetailBody entry={entry} />
+                <DetailBody entry={localizedEntry} />
               </div>
               {/* Top fade — 스크롤바 영역 비움 */}
               <div style={{
@@ -126,7 +132,7 @@ export default function DreamDetailModal({ entry, onClose }: Props) {
             </div>
 
             {/* Fixed comment input footer */}
-            <CommentInputFooter entry={entry} />
+            <CommentInputFooter entry={localizedEntry} />
           </motion.div>
         </div>
       )}
@@ -134,11 +140,13 @@ export default function DreamDetailModal({ entry, onClose }: Props) {
   )
 }
 
-function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => void }) {
+function DetailHeader({ entry, onClose, translating }: { entry: DetailEntry; onClose: () => void; translating: boolean }) {
+  const t = useT()
+  const locale = useDreamStore((s) => s.locale)
   const auspice = entry.auspice ?? inferAuspiceFromMoods(entry.moods ?? [])
   const theme = AUSPICE_THEME[auspice]
-  const auspiceLabel = tt(`auspice.${auspice}`)
-  const authorLabel = entry.authorName ?? (entry.isMine ? tt('detail.author.me') : tt('detail.author.anon'))
+  const auspiceLabel = t(`auspice.${auspice}`)
+  const authorLabel = entry.authorName ?? (entry.isMine ? t('detail.author.me') : t('detail.author.anon'))
 
   return (
     <div style={{
@@ -165,7 +173,7 @@ function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => v
             border: entry.type === 'premium' ? '1px solid rgba(127,119,221,0.4)' : '1px solid rgba(196,75,114,0.35)',
             color: entry.type === 'premium' ? '#C4C0F5' : '#E8899A',
           }}>
-            {entry.type === 'premium' ? tt('detail.type.premium') : tt('detail.type.basic')}
+            {entry.type === 'premium' ? t('detail.type.premium') : t('detail.type.basic')}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -173,8 +181,11 @@ function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => v
             {authorLabel}
           </span>
           <span style={{ fontSize: 12, color: '#555E80' }}>
-            {formatLongDate(entry.date)}
+            {formatLongDate(entry.date, locale)}
           </span>
+          {translating && (
+            <span style={{ fontSize: 11, color: '#C4C0F5' }}>{t('detail.translating')}</span>
+          )}
         </div>
       </div>
       <button
@@ -195,6 +206,7 @@ function DetailHeader({ entry, onClose }: { entry: DetailEntry; onClose: () => v
 }
 
 function DetailBody({ entry }: { entry: DetailEntry }) {
+  const t = useT()
   const hasPages = entry.type === 'premium' && entry.pages && entry.pages.length > 0
   const hasBlocks = entry.type === 'premium' && entry.interpretationBlocks && entry.interpretationBlocks.length > 0
 
@@ -213,7 +225,7 @@ function DetailBody({ entry }: { entry: DetailEntry }) {
             letterSpacing: 0.5,
             lineHeight: 1,
           }}>
-            꿈 내용
+            {t('detail.dreamContent')}
           </span>
           {entry.moods && entry.moods.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6 }}>
@@ -246,7 +258,7 @@ function DetailBody({ entry }: { entry: DetailEntry }) {
       {/* Interpretation section */}
       {hasBlocks ? (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>상세 해석</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>{t('detail.detailedInterpretation')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {entry.interpretationBlocks!.map((block, i) => (
               <InterpretationBlockCard key={i} block={block} index={i} />
@@ -256,7 +268,7 @@ function DetailBody({ entry }: { entry: DetailEntry }) {
       ) : (
         entry.interpretation && (
           <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>해석</p>
+            <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>{t('detail.interpretation')}</p>
             <FormattedInterpretation text={entry.interpretation} />
           </section>
         )
@@ -275,7 +287,7 @@ function DetailBody({ entry }: { entry: DetailEntry }) {
             userSelect: 'none',
             padding: '8px 4px',
           }}>
-            {tt('detail.original')}
+            {t('detail.original')}
           </summary>
           <div
             style={{
@@ -339,6 +351,7 @@ function InterpretationBlockCard({ block, index }: { block: InterpretationBlock;
 }
 
 function LuckyCard({ lucky }: { lucky: LuckyToday }) {
+  const t = useT()
   return (
     <section
       style={{
@@ -352,12 +365,12 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
       }}
     >
       <p style={{ fontSize: 12, fontWeight: 700, color: '#E8E8F4', letterSpacing: 0.5 }}>
-        {tt('detail.lucky.title')}
+        {t('detail.lucky.title')}
       </p>
 
       {/* 가지고 다닐 것 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{tt('detail.lucky.item')}</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{t('detail.lucky.item')}</p>
         <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <p style={{ fontSize: 14, color: '#E8E8F4', fontWeight: 500 }}>{lucky.item}</p>
         </div>
@@ -365,7 +378,7 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
 
       {/* 색상 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{tt('detail.lucky.color')}</p>
+        <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{t('detail.lucky.color')}</p>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div
             style={{
@@ -388,7 +401,7 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
       {/* 피해야 할 것 */}
       {lucky.avoid && lucky.avoid.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{tt('detail.lucky.avoid')}</p>
+          <p style={{ fontSize: 11, fontWeight: 600, color: '#8890B0' }}>{t('detail.lucky.avoid')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {lucky.avoid.map((item, i) => (
               <div
@@ -415,13 +428,13 @@ function LuckyCard({ lucky }: { lucky: LuckyToday }) {
         <div style={{ display: 'grid', gridTemplateColumns: lucky.luckyDirection && lucky.luckyNumber != null ? '1fr 1fr' : '1fr', gap: 10 }}>
           {lucky.luckyDirection && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>{tt('detail.lucky.direction')}</p>
+              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>{t('detail.lucky.direction')}</p>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>{lucky.luckyDirection}</p>
             </div>
           )}
           {lucky.luckyNumber != null && (
             <div style={{ padding: '10px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>{tt('detail.lucky.number')}</p>
+              <p style={{ fontSize: 11, color: '#8890B0', marginBottom: 2 }}>{t('detail.lucky.number')}</p>
               <p style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>{lucky.luckyNumber}</p>
             </div>
           )}
@@ -737,6 +750,8 @@ function CommentBody({ comment }: { comment: DreamComment }) {
  */
 function CommentList({ entry }: { entry: DetailEntry }) {
   const { commentsByDreamId, nickname, deleteComment } = useDreamStore()
+  const t = useT()
+  const locale = useDreamStore((s) => s.locale)
   // 시드(entry.comments) + 저장된(store.commentsByDreamId) 합치기 (시간순)
   const seed = entry.comments ?? []
   const stored = commentsByDreamId[entry.id] ?? []
@@ -751,7 +766,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 4 }}>
       <p style={{ fontSize: 11, fontWeight: 600, color: '#555E80', letterSpacing: 0.5 }}>
-        {tt('detail.commentsLabel')} {comments.length > 0 ? `· ${comments.length}` : ''}
+        {t('detail.commentsLabel')} {comments.length > 0 ? `· ${comments.length}` : ''}
       </p>
 
       {comments.length > 0 ? (
@@ -775,7 +790,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: mine ? '#C4C0F5' : '#E8E8F4' }}>{c.authorName}</span>
                     <span style={{ fontSize: 10, color: '#555E80' }}>
-                      {formatShortDate(c.date)}
+                      {formatShortDate(c.date, locale)}
                     </span>
                   </div>
                   <CommentBody comment={c} />
@@ -811,7 +826,7 @@ function CommentList({ entry }: { entry: DetailEntry }) {
           })}
         </div>
       ) : (
-        <p style={{ fontSize: 12, color: '#555E80' }}>{tt('detail.commentsEmpty')}</p>
+        <p style={{ fontSize: 12, color: '#555E80' }}>{t('detail.commentsEmpty')}</p>
       )}
     </section>
   )
@@ -821,7 +836,8 @@ function CommentList({ entry }: { entry: DetailEntry }) {
  * 댓글 입력 — 모달 하단 고정 푸터
  */
 function CommentInputFooter({ entry }: { entry: DetailEntry }) {
-  const { addComment, nickname, locale } = useDreamStore()
+  const { addComment, deleteComment, nickname, locale } = useDreamStore()
+  const t = useT()
   const [text, setText] = useState('')
 
   const handleSubmit = async () => {
@@ -838,11 +854,17 @@ function CommentInputFooter({ entry }: { entry: DetailEntry }) {
     addComment(entry.id, tempComment)
     setText('')
     try {
-      await fetch(`/api/dreams/${entry.id}/comments`, {
+      const res = await fetch(`/api/dreams/${entry.id}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: body, sourceLocale: locale }),
       })
+      if (!res.ok) return
+      const { comment } = await res.json() as { comment?: DreamComment }
+      if (comment) {
+        deleteComment(entry.id, tempComment.id)
+        addComment(entry.id, comment)
+      }
     } catch { /* silent */ }
   }
 
@@ -859,7 +881,7 @@ function CommentInputFooter({ entry }: { entry: DetailEntry }) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit() }}
-        placeholder={tt('detail.commentPlaceholder')}
+        placeholder={t('detail.commentPlaceholder')}
         style={{
           flex: 1,
           padding: '10px 14px',
@@ -886,7 +908,7 @@ function CommentInputFooter({ entry }: { entry: DetailEntry }) {
           opacity: text.trim() ? 1 : 0.5,
         }}
       >
-        {tt('detail.commentSend')}
+        {t('detail.commentSend')}
       </button>
     </div>
   )

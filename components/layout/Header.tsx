@@ -17,25 +17,24 @@ const TAB_LABELS: Record<TabId & ('new' | 'feed' | 'log'), { ko: string; en: str
 
 const TAB_IDS: ('new' | 'feed' | 'log')[] = ['new', 'feed', 'log']
 
-function InitialAvatar({ name, size = 32 }: { name?: string | null; size?: number }) {
-  const initial = name?.charAt(0)?.toUpperCase() ?? '?'
-  return (
-    <div
-      className="flex items-center justify-center rounded-full font-bold select-none"
-      style={{
-        width: size, height: size, fontSize: 15,
-        background: 'linear-gradient(135deg, #7F77DD, #C44B72)',
-        color: 'white',
-      }}
-    >
-      {initial}
-    </div>
-  )
-}
-
-function ProfileModal({ session, credits, onClose }: { session: Session; credits: number; onClose: () => void }) {
+function ProfileModal({
+  session,
+  credits,
+  nickname,
+  avatarUrl,
+  onClose,
+  onLogout,
+}: {
+  session: Session
+  credits: number
+  nickname: string
+  avatarUrl: string | null
+  onClose: () => void
+  onLogout: () => void
+}) {
   const { dreams } = useDreamStore()
   const user = session.user
+  const asset = getAvatarAsset(nickname, avatarUrl)
   const t = useT()
   return (
     <AnimatePresence>
@@ -65,12 +64,25 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
 
           {/* Profile */}
           <div className="flex items-center gap-4">
-            {user?.image
-              ? <img src={user.image} alt="avatar" className="w-16 h-16 rounded-2xl" />
-              : <InitialAvatar name={user?.name} size={64} />
-            }
+            <div
+              className="flex items-center justify-center rounded-2xl font-bold select-none"
+              style={{
+                width: 64,
+                height: 64,
+                overflow: 'hidden',
+                background: 'linear-gradient(135deg, #7F77DD, #C44B72)',
+                color: 'white',
+              }}
+            >
+              {asset.type === 'image' ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={asset.url} alt={nickname} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              ) : (
+                <PersonIcon size={34} />
+              )}
+            </div>
             <div>
-              <p className="text-lg font-bold" style={{ color: '#E8E8F4' }}>{user?.name ?? t('header.userFallback')}</p>
+              <p className="text-lg font-bold" style={{ color: '#E8E8F4' }}>{nickname || t('header.userFallback')}</p>
               <p className="text-sm" style={{ color: '#8890B0' }}>{user?.email ?? 'dreamer@dreamy.app'}</p>
             </div>
           </div>
@@ -90,7 +102,7 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
 
           {/* Logout */}
           <button
-            onClick={() => signOut({ callbackUrl: '/' })}
+            onClick={onLogout}
             className="w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:brightness-110"
             style={{ background: 'rgba(196,75,114,0.15)', border: '1px solid rgba(196,75,114,0.3)', color: '#D4537E' }}
           >
@@ -103,12 +115,16 @@ function ProfileModal({ session, credits, onClose }: { session: Session; credits
 }
 
 export default function Header({ session }: { session: Session }) {
-  const { credits, setCreditModalOpen, activeTab, setActiveTab, nickname, avatarUrl, locale, toggleLocale } = useDreamStore()
+  const { credits, setCreditModalOpen, activeTab, setActiveTab, nickname, avatarUrl, locale, toggleLocale, resetAll } = useDreamStore()
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
-  const user = session.user
 
   const asset = getAvatarAsset(nickname, avatarUrl)
+
+  const handleLogout = async () => {
+    resetAll()
+    await signOut({ callbackUrl: '/' })
+  }
 
   const AvatarButton = ({ size = 32 }: { size?: number }) => (
     <button
@@ -192,7 +208,7 @@ export default function Header({ session }: { session: Session }) {
         </button>
         <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '4px 0' }} />
         <button
-          onClick={() => signOut({ callbackUrl: '/' })}
+          onClick={handleLogout}
           style={{ ...menuItemStyle, color: '#D4537E' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
@@ -342,7 +358,10 @@ export default function Header({ session }: { session: Session }) {
         <ProfileModal
           session={session}
           credits={credits}
+          nickname={nickname}
+          avatarUrl={avatarUrl}
           onClose={() => setProfileOpen(false)}
+          onLogout={handleLogout}
         />
       )}
     </>

@@ -159,7 +159,17 @@ export const useDreamStore = create<DreamStore>()(
             )
             return { ...d, comments: updated }
           })
-          return { nickname: name, dreams: newDreams }
+          const newCommentsByDreamId = Object.fromEntries(
+            Object.entries(s.commentsByDreamId).map(([dreamId, comments]) => [
+              dreamId,
+              comments.map((c) =>
+                c.authorName === old
+                  ? { ...c, authorName: name, authorInitial: name.charAt(0) }
+                  : c
+              ),
+            ]),
+          )
+          return { nickname: name, dreams: newDreams, commentsByDreamId: newCommentsByDreamId }
         }),
       setAvatarUrl: (url) => set({ avatarUrl: url }),
       addComment: (dreamId, comment) =>

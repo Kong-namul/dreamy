@@ -194,6 +194,9 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
                            en: 'This dream will be removed forever. This cannot be undone.' },
 
   // Dream detail modal
+  'detail.dreamContent': { ko: '꿈 내용', en: 'Dream' },
+  'detail.interpretation': { ko: '해석', en: 'Interpretation' },
+  'detail.detailedInterpretation': { ko: '상세 해석', en: 'Detailed interpretation' },
   'detail.share':       { ko: '공개하기', en: 'Share to feed' },
   'detail.unshare':     { ko: '비공개로', en: 'Make private' },
   'detail.fortune':     { ko: '오늘의 운세', en: "Today's fortune" },

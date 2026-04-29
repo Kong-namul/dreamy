@@ -33,12 +33,16 @@ const CARD_STYLE: React.CSSProperties = {
 }
 
 export default function StatsTab() {
-  const { dreams, setActiveTab } = useDreamStore()
+  const { dreams, creditHistory, setActiveTab } = useDreamStore()
   const t = useT()
 
   const totalDreams = dreams.length
   const thisWeek = dreams.filter((d) => Date.now() - new Date(d.date).getTime() < 7 * 86400000).length
-  const spentCredits = dreams.reduce((acc, d) => acc + (d.type === 'premium' ? 15 : 5), 0)
+  const spentCredits = Math.abs(
+    creditHistory
+      .filter((tx) => tx.type === 'spend')
+      .reduce((acc, tx) => acc + tx.amount, 0),
+  )
 
   const moodCounts = MOOD_ORDER.map((key) => ({
     key,
