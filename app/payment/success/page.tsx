@@ -49,6 +49,14 @@ function PaymentSuccessInner() {
             setStatus(body.status)
             if (body.credits != null) setCredits(body.credits)
             if (body.status === 'confirmed' || body.status === 'failed' || body.status === 'expired') {
+              // opener(메인 탭)가 있으면 결과 전달 후 탭 자동 닫기
+              if (window.opener) {
+                window.opener.postMessage(
+                  { type: 'STRIPE_PAYMENT_DONE', status: body.status, credits: body.credits ?? null },
+                  window.location.origin,
+                )
+                setTimeout(() => window.close(), 800)
+              }
               return
             }
           }

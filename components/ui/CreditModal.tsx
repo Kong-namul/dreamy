@@ -157,7 +157,7 @@ function PaymentLogo({ pm }: { pm: PaymentMethod }) {
   )
 }
 
-type Step = 'select' | 'pay'
+type Step = 'select' | 'pay' | 'success'
 
 export default function CreditModal() {
   const { creditModalOpen, setCreditModalOpen, addCredits, setActiveTab } = useDreamStore()
@@ -166,6 +166,7 @@ export default function CreditModal() {
   const [payingId, setPayingId] = useState<string | null>(null)
   const [payError, setPayError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [successCredits, setSuccessCredits] = useState<number | null>(null)
   const t = useT()
 
   useEffect(() => {
@@ -188,9 +189,25 @@ export default function CreditModal() {
       setTimeout(() => {
         setStep('select')
         setPicked(null)
+        setSuccessCredits(null)
       }, 250)
     }
   }, [creditModalOpen])
+
+  // Stripe 새 탭에서 결제 완료 시 postMessage 수신
+  useEffect(() => {
+    const handler = (e: MessageEvent) => {
+      if (e.origin !== window.location.origin) return
+      if (e.data?.type !== 'STRIPE_PAYMENT_DONE') return
+      if (e.data.status === 'confirmed') {
+        setSuccessCredits(e.data.credits)
+        setStep('success')
+        setCreditModalOpen(true)
+      }
+    }
+    window.addEventListener('message', handler)
+    return () => window.removeEventListener('message', handler)
+  }, [setCreditModalOpen])
 
   const handlePickPackage = (pkg: Package) => {
     setPicked(pkg)
@@ -528,7 +545,51 @@ export default function CreditModal() {
             {/* Body — AnimatePresence swaps step content inline */}
             <div style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column' }}>
               <AnimatePresence mode="wait">
-                {step === 'select' ? (
+                {step === 'success' ? (
+                  <motion.div
+                    key="success"
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.92 }}
+                    transition={{ duration: 0.25 }}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, flex: 1, textAlign: 'center' }}
+                  >
+                    <div style={{
+                      width: 72, height: 72, borderRadius: 22,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: 'linear-gradient(135deg, rgba(127,119,221,0.35), rgba(196,75,114,0.25))',
+                      border: '1px solid rgba(127,119,221,0.5)',
+                    }}>
+                      <DiamondIcon size={36} style={{ color: '#C4C0F5' }} />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <p style={{ fontSize: 20, fontWeight: 800, color: '#E8E8F4' }}>결제 완료!</p>
+                      {successCredits != null && (
+                        <p style={{ fontSize: 14, color: '#8890B0' }}>
+                          총 보유 크레딧{' '}
+                          <span style={{ color: '#C4C0F5', fontWeight: 700 }}>{successCredits}</span>
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setCreditModalOpen(false)}
+                      style={{
+                        marginTop: 8,
+                        width: '100%',
+                        padding: '13px 0',
+                        borderRadius: 16,
+                        background: 'linear-gradient(135deg, #7F77DD, #C44B72)',
+                        color: 'white',
+                        border: 'none',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      확인
+                    </button>
+                  </motion.div>
+                ) : step === 'select' ? (
                   <motion.div
                     key="select"
                     initial={{ opacity: 0, x: -20 }}
