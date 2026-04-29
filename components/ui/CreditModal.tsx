@@ -269,7 +269,9 @@ export default function CreditModal() {
       }
       const checkout = window.open(body.checkoutUrl, '_blank', 'noopener,noreferrer')
       if (!checkout) {
-        window.location.assign(body.checkoutUrl)
+        // 팝업 차단된 경우 — 현재 페이지는 유지하고 링크로 안내
+        setPayError('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해 주세요.')
+        setPayingId(null)
         return
       }
       setPayingId(null)
