@@ -67,6 +67,14 @@ const PAYMENTS: PaymentMethod[] = [
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
   },
   {
+    id: 'stripe_onramp',
+    label: 'Stripe Crypto',
+    subKey: 'credit.pm.stripeOnramp.sub',
+    color: '#635BFF',
+    initial: 'S',
+    logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
+  },
+  {
     id: 'binance',
     label: 'Binance Pay',
     subKey: 'credit.pm.binance.sub',
@@ -294,7 +302,7 @@ export default function CreditModal() {
         newTab.location.href = body.checkoutUrl
       } else {
         // 팝업 차단된 경우 — 현재 페이지는 유지하고 안내
-        setPayError('팝업이 차단되었습니다. 브라우저에서 팝업을 허용한 뒤 다시 시도해 주세요.')
+        setPayError(t('credit.err.popup'))
         setPayingId(null)
         return
       }
@@ -303,6 +311,38 @@ export default function CreditModal() {
       newTab?.close()
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
+      setPayingId(null)
+    }
+  }
+
+  const handleStripeOnramp = async () => {
+    if (!picked) return
+    setPayError(null)
+    setPayingId('stripe_onramp')
+
+    const newTab = window.open('', '_blank')
+
+    try {
+      const res = await fetch('/api/payment/stripe/create-onramp-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageId: picked.id }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok || !body.redirectUrl) {
+        newTab?.close()
+        throw new Error(body.error ?? t('credit.err.onramp'))
+      }
+      if (newTab) {
+        newTab.location.href = body.redirectUrl
+      } else {
+        setPayError(t('credit.err.popup'))
+      }
+    } catch (err) {
+      newTab?.close()
+      const msg = err instanceof Error ? err.message : t('credit.err.generic')
+      setPayError(msg)
+    } finally {
       setPayingId(null)
     }
   }
@@ -395,6 +435,10 @@ export default function CreditModal() {
     }
     if (payment.id === 'stripe') {
       handleStripe()
+      return
+    }
+    if (payment.id === 'stripe_onramp') {
+      handleStripeOnramp()
       return
     }
     if (payment.id === 'binance') {
