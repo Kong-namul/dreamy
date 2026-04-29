@@ -25,6 +25,7 @@ interface DreamStore {
   interpretJob: InterpretJob | null   // 진행 중 해석 (탭 전환에도 살아남음)
   interpretDraft: { dream: string; moods: Mood[] }  // 작성 중 꿈 본문 (탭 전환해도 유지)
   locale: 'ko' | 'en'                // UI 언어
+  currentUserEmail: string | null    // persist 된 로컬 데이터의 소유자
 
   setCredits: (n: number) => void
   spendCredits: (n: number, label?: string) => boolean
@@ -50,6 +51,7 @@ interface DreamStore {
   updateInterpretMsg: (msg: string, msgKey?: string) => void
   setLocale: (locale: 'ko' | 'en') => void
   toggleLocale: () => void
+  setCurrentUserEmail: (email: string | null) => void
 }
 
 const INITIAL_STATE = {
@@ -66,6 +68,7 @@ const INITIAL_STATE = {
   interpretJob: null as InterpretJob | null,
   interpretDraft: { dream: '', moods: [] as Mood[] },
   locale: 'ko' as 'ko' | 'en',
+  currentUserEmail: null as string | null,
 }
 
 const welcomeBonusTx = (): CreditTransaction => ({
@@ -92,6 +95,7 @@ export const useDreamStore = create<DreamStore>()(
       interpretJob: null,
       interpretDraft: { dream: '', moods: [] },
       locale: 'ko',
+      currentUserEmail: null,
 
       setCredits: (n) => set({ credits: n }),
       spendCredits: (n, label) => {
@@ -215,6 +219,7 @@ export const useDreamStore = create<DreamStore>()(
       updateInterpretMsg: (msg: string, msgKey?: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg, msgKey } } : {}),
       setLocale: (locale) => set({ locale }),
       toggleLocale: () => set((s) => ({ locale: s.locale === 'ko' ? 'en' : 'ko' })),
+      setCurrentUserEmail: (email) => set({ currentUserEmail: email }),
     }),
     {
       name: 'dreamy-store',

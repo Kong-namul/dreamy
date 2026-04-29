@@ -78,6 +78,11 @@ export default function SettingsTab() {
     }
   }
 
+  const handleLogout = async () => {
+    resetAll()
+    await signOut({ callbackUrl: '/' })
+  }
+
   const user = session?.user
   const publicDreams = dreams.filter((d) => d.shared).length
 
@@ -153,7 +158,7 @@ export default function SettingsTab() {
 
       {/* Logout */}
       <button
-        onClick={() => signOut({ callbackUrl: '/' })}
+        onClick={handleLogout}
         style={{
           width: '100%',
           padding: '14px 0',

@@ -12,14 +12,33 @@ import type { DreamEntry } from '@/types'
  */
 export function useDreamSync(email: string | null | undefined) {
   const hydrateFromServer   = useDreamStore((s) => s.hydrateFromServer)
-  const localDreams         = useDreamStore.getState().dreams
-  const localDeletedDreams  = useDreamStore.getState().deletedDreams
 
   useEffect(() => {
     if (!email) return
     let cancelled = false
     ;(async () => {
       try {
+        const store = useDreamStore.getState()
+        const ownerEmail = store.currentUserEmail
+        const hasUnownedLocalData =
+          store.dreams.length > 0 ||
+          store.deletedDreams.length > 0 ||
+          Object.keys(store.commentsByDreamId).length > 0
+
+        // 같은 브라우저에서 다른 Google 계정으로 로그인한 경우,
+        // 이전 계정의 로컬 꿈을 새 계정 서버로 backfill 하면 안 된다.
+        if (ownerEmail && ownerEmail !== email) {
+          store.resetAll()
+          useDreamStore.getState().setCurrentUserEmail(email)
+        } else if (!ownerEmail) {
+          if (hasUnownedLocalData) store.resetAll()
+          store.setCurrentUserEmail(email)
+        }
+
+        const freshStore = useDreamStore.getState()
+        const localDreams = freshStore.dreams
+        const localDeletedDreams = freshStore.deletedDreams
+
         const res = await fetch('/api/dreams')
         if (!res.ok) return
         const { dreams: serverDreams, deletedDreams: serverDeleted } =

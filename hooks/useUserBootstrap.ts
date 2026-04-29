@@ -15,6 +15,8 @@ export function useUserBootstrap(email: string | null | undefined) {
   const setNickname  = useDreamStore((s) => s.setNickname)
   const setAvatarUrl = useDreamStore((s) => s.setAvatarUrl)
   const setCredits   = useDreamStore((s) => s.setCredits)
+  const resetAll     = useDreamStore((s) => s.resetAll)
+  const setCurrentUserEmail = useDreamStore((s) => s.setCurrentUserEmail)
   const nickname     = useDreamStore((s) => s.nickname)
   const avatarUrl    = useDreamStore((s) => s.avatarUrl)
 
@@ -25,6 +27,21 @@ export function useUserBootstrap(email: string | null | undefined) {
     let cancelled = false
     ;(async () => {
       try {
+        const state = useDreamStore.getState()
+        const ownerEmail = state.currentUserEmail
+        const hasUnownedLocalData =
+          state.dreams.length > 0 ||
+          state.deletedDreams.length > 0 ||
+          Object.keys(state.commentsByDreamId).length > 0
+
+        if (ownerEmail && ownerEmail !== email) {
+          resetAll()
+          setCurrentUserEmail(email)
+        } else if (!ownerEmail) {
+          if (hasUnownedLocalData) resetAll()
+          setCurrentUserEmail(email)
+        }
+
         const res = await fetch('/api/user/ensure', { method: 'POST' })
         if (!res.ok) return
         const { user, created } = await res.json() as {
