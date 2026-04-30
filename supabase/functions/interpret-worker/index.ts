@@ -200,7 +200,7 @@ async function processJob(jobId: string) {
   if (jobErr || !job) throw new Error(jobErr?.message ?? 'job not found')
 
   const current = job as Job
-  if (current.status === 'running' || current.status === 'completed') return
+  if (current.status !== 'pending') return
 
   await supa
     .from('interpret_jobs')
@@ -233,6 +233,11 @@ async function processJob(jobId: string) {
 
   try {
     const label = current.type === 'premium' ? '그림일기' : '기본 해석'
+    const moods = current.moods ?? []
+    const aiData = current.type === 'premium'
+      ? await interpretDiary(current.dream, moods)
+      : await interpretBasic(current.dream, moods)
+
     const { data: spendResult, error: spendErr } = await supa.rpc('spend_credits', {
       p_email: current.email,
       p_amount: current.cost,
@@ -246,11 +251,6 @@ async function processJob(jobId: string) {
     }
     spent = true
     creditsAfter = spendResult
-
-    const moods = current.moods ?? []
-    const aiData = current.type === 'premium'
-      ? await interpretDiary(current.dream, moods)
-      : await interpretBasic(current.dream, moods)
 
     const { data: saved, error: saveErr } = await supa
       .from('dreams')
