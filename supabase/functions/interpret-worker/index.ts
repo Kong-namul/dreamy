@@ -106,6 +106,7 @@ pages는 총 5개. interpretationBlocks는 5~7개, 총 1200~2000자.
 이모지 금지. 단정적 예언, 의료·재무 자문 금지.`
 
 const URL_VERSION = 'v2'
+const IMAGE_BUCKET = 'dream-images'
 
 function appOrigin() {
   return Deno.env.get('APP_URL') ?? Deno.env.get('NEXT_PUBLIC_APP_URL') ?? 'https://dreamy-tau.vercel.app'
@@ -128,6 +129,49 @@ function attachImageUrls<T extends { title: string; text: string; imagePrompt?: 
     ...page,
     imageUrl: buildImageUrl(page.imagePrompt || `${page.title} ${page.text.slice(0, 40)}`, baseSeed + index),
   }))
+}
+
+function imageExt(contentType: string) {
+  if (contentType.includes('svg')) return 'svg'
+  if (contentType.includes('png')) return 'png'
+  if (contentType.includes('webp')) return 'webp'
+  return 'jpg'
+}
+
+async function storePageImage(
+  supa: ReturnType<typeof createClient>,
+  job: Job,
+  page: { title: string; text: string; imagePrompt?: string; imageUrl?: string },
+  index: number,
+) {
+  if (!page.imageUrl) return page
+
+  const res = await fetch(page.imageUrl)
+  if (!res.ok) throw new Error(`image generation failed (${res.status})`)
+
+  const contentType = res.headers.get('content-type') ?? 'image/jpeg'
+  if (!contentType.startsWith('image/')) throw new Error('image generation returned non-image content')
+
+  const bytes = await res.arrayBuffer()
+  const ext = imageExt(contentType)
+  const path = `${job.user_id}/${job.id}/page-${index + 1}.${ext}`
+
+  const { error: uploadErr } = await supa.storage
+    .from(IMAGE_BUCKET)
+    .upload(path, bytes, {
+      contentType,
+      cacheControl: '31536000',
+      upsert: true,
+    })
+  if (uploadErr) throw new Error(`image upload failed: ${uploadErr.message}`)
+
+  const { data } = supa.storage.from(IMAGE_BUCKET).getPublicUrl(path)
+  return { ...page, imageUrl: data.publicUrl }
+}
+
+async function persistDiaryImages(supa: ReturnType<typeof createClient>, job: Job, data: DiaryInterpretation) {
+  const pages = await Promise.all((data.pages ?? []).map((page, index) => storePageImage(supa, job, page, index)))
+  return { ...data, pages }
 }
 
 function parseJson<T>(text: string): T {
@@ -235,7 +279,7 @@ async function processJob(jobId: string) {
     const label = current.type === 'premium' ? '그림일기' : '기본 해석'
     const moods = current.moods ?? []
     const aiData = current.type === 'premium'
-      ? await interpretDiary(current.dream, moods)
+      ? await persistDiaryImages(supa, current, await interpretDiary(current.dream, moods))
       : await interpretBasic(current.dream, moods)
 
     const { data: spendResult, error: spendErr } = await supa.rpc('spend_credits', {
