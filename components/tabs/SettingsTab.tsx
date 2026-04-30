@@ -153,7 +153,7 @@ export default function SettingsTab() {
         <Divider />
         <MenuButton label={t('settings.menu.trash')} onClick={() => setActiveTab('trash')} />
         <Divider />
-        <MenuButton label={t('settings.menu.terms')} onClick={() => alert(t('dialog.comingSoon'))} />
+        <MenuButton label={t('settings.menu.terms')} onClick={() => window.open('/legal', '_blank', 'noopener,noreferrer')} />
       </div>
 
       {/* Logout */}
