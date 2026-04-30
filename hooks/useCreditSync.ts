@@ -13,6 +13,7 @@ export function useCreditSync(email: string | null | undefined) {
     let cancelled = false
     ;(async () => {
       try {
+        await fetch('/api/interpret/recover', { method: 'POST' }).catch(() => null)
         const res = await fetch('/api/credits/history')
         if (!res.ok) return
         const { history } = await res.json()
