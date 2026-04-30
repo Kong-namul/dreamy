@@ -34,6 +34,7 @@ async function runInterpret(type: 'basic' | 'premium') {
   const initialMsg = type === 'basic' ? '꿈을 해석하고 있어요...' : PREMIUM_LOADING_MSGS[0]
   const initialKey = type === 'basic' ? 'interpret.basic' : PREMIUM_LOADING_KEYS[0]
   store.setInterpretJob({ type, msg: initialMsg, msgKey: initialKey, startedAt: Date.now() })
+  store.setActiveTab('mydiary')
 
   // premium 메시지 로테이션 (5초마다)
   let msgTimer: ReturnType<typeof setInterval> | null = null

@@ -1,6 +1,6 @@
 'use client'
 import { useSession } from 'next-auth/react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDreamStore } from '@/store/dreamStore'
 import StarField from '@/components/background/StarField'
 import CloudLayer from '@/components/background/CloudLayer'
@@ -47,6 +47,7 @@ const BG = 'linear-gradient(180deg, #03050D 0%, #060C1C 50%, #0A1530 100%)'
 export default function Home() {
   const { data: session, status } = useSession()
   const activeTab = useDreamStore((s) => s.activeTab)
+  const interpretJob = useDreamStore((s) => s.interpretJob)
   const email = session?.user?.email ?? null
 
   // 관제탑 훅들 — 각각 책임이 하나씩.
@@ -55,6 +56,18 @@ export default function Home() {
   const { showWelcomeBonus, closeWelcomeBonus } = useUserBootstrap(email)
   useDreamSync(email)
   useCreditSync(email)
+
+  useEffect(() => {
+    if (!interpretJob) return
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [interpretJob])
 
   const [showAuth, setShowAuth] = useState(false)
 
