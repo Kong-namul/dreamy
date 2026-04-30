@@ -150,6 +150,28 @@ body {
   border-radius: 2px;
 }
 
+.app-main-scroll {
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .app-main-scroll {
+    padding-bottom: 48px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .app-main-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .app-main-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* 반응형 표시 제어 — 인라인 style 의 display 를 덮어쓰기 위해 !important 사용 */
 .mobile-only { display: flex !important; }
 .desktop-only { display: none !important; }

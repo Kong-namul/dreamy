@@ -100,7 +100,7 @@ export default function Home() {
             // Authenticated
             <div className="flex flex-col w-full min-h-0" style={{ height: '100dvh' }}>
               <Header session={session} />
-              <main className="flex-1 min-h-0 w-full overflow-y-auto pb-24 lg:pb-12" style={{ WebkitOverflowScrolling: 'touch' }}>
+              <main className="app-main-scroll flex-1 min-h-0 w-full overflow-y-auto">
                 <div style={{ maxWidth: 560, margin: '0 auto', padding: '1.875rem 1.5rem 0' }}>
                   <AnimatePresence mode="wait">
                     <motion.div
