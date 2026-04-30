@@ -860,7 +860,7 @@ export default function CreditModal() {
                                     transition={{ duration: 0.18 }}
                                     style={{ overflow: 'hidden' }}
                                   >
-                                    <div style={{ padding: '0 10px 10px 58px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                    <div style={{ padding: '0 10px 10px 58px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                                       <button
                                         onClick={handleStripe}
                                         disabled={disabled}
@@ -875,13 +875,10 @@ export default function CreditModal() {
                                           border: '1px solid rgba(255,255,255,0.08)',
                                           color: '#E8E8F4',
                                           cursor: disabled ? 'not-allowed' : 'pointer',
-                                          textAlign: 'left',
+                                          textAlign: 'center',
                                         }}
                                       >
-                                        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                          <span style={{ fontSize: 13, fontWeight: 700 }}>{t('credit.pm.stripeCard.title')}</span>
-                                          <span style={{ fontSize: 11, color: '#8890B0' }}>{t('credit.pm.stripe.sub')}</span>
-                                        </span>
+                                        <span style={{ fontSize: 13, fontWeight: 700 }}>{t('credit.pm.stripeCard.title')}</span>
                                         <ChevronRightIcon size={12} style={{ color: '#555E80' }} />
                                       </button>
                                       <button
@@ -898,13 +895,10 @@ export default function CreditModal() {
                                           border: '1px solid rgba(127,119,221,0.25)',
                                           color: '#E8E8F4',
                                           cursor: disabled ? 'not-allowed' : 'pointer',
-                                          textAlign: 'left',
+                                          textAlign: 'center',
                                         }}
                                       >
-                                        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                          <span style={{ fontSize: 13, fontWeight: 700 }}>{t('credit.pm.stripeCrypto.title')}</span>
-                                          <span style={{ fontSize: 11, color: '#8890B0' }}>{t('credit.pm.stripeCrypto.sub')}</span>
-                                        </span>
+                                        <span style={{ fontSize: 13, fontWeight: 700 }}>{t('credit.pm.stripeCrypto.title')}</span>
                                         <ChevronRightIcon size={12} style={{ color: '#555E80' }} />
                                       </button>
                                     </div>
