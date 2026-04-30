@@ -1,39 +1,18 @@
 /**
  * POST /api/interpret/run
  *
- * 단일 엔드포인트로 "크레딧 차감 → AI 해석 → DB 저장" 을 한 번에 처리.
- * 중간 단계에서 실패하면 사용된 크레딧을 자동으로 환불한다.
- *
- * 기존엔 클라이언트가 /api/credits/spend → /api/interpret(or /api/diary) → /api/dreams 를
- * 세 번 나눠 호출해서, 중간 단계가 실패하면 크레딧만 빠지고 결과가 없는 상황이 생겼음.
- *
- * body: { type: 'basic' | 'premium', dream: string, moods?: Mood[] }
- *   - basic   → interpretDream 호출, 5 크레딧
- *   - premium → interpretDiary + 이미지 URL 주입, 15 크레딧
- *
- * response:
- *   200 → { dream: DreamEntry, credits: number }
- *   402 → { error: 'insufficient credits', credits: number }
- *   401 → unauthorized
- *   5xx → AI/저장 실패. 이 경우 이미 환불 완료.
+ * Starts an interpretation job and returns immediately.
+ * The long Anthropic + DB save workflow runs in Supabase Edge Function
+ * `interpret-worker`, so Vercel no longer waits for the full generation.
  */
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { supabaseServer } from '@/lib/supabase/server'
-import { interpretDream, interpretDiary } from '@/lib/claude'
-import { attachImageUrls } from '@/lib/pollinations'
-import type { DreamEntry, Mood } from '@/types'
-
-// Claude 호출이 길 수 있어 타임아웃 여유.
-export const maxDuration = 60
+import type { Mood } from '@/types'
 
 const COST = { basic: 5, premium: 15 } as const
-const LABEL = { basic: '기본 해석', premium: '그림일기' } as const
-
-// 모바일 실수 붙여넣기·악성 긴 입력으로 Claude 비용이 폭주하는 걸 막기 위한 상한.
 const MAX_DREAM_LENGTH = 3000
 
-// 현재 유저 locale 은 요청 바디로 받아서 source_locale 태깅에 사용 (자동 번역의 기반).
 type RunBody = {
   type?: 'basic' | 'premium'
   dream?: string
@@ -47,6 +26,7 @@ export async function POST(req: Request) {
     typeof crypto !== 'undefined' && 'randomUUID' in crypto
       ? crypto.randomUUID()
       : `run-${Date.now()}`
+
   const session = await auth()
   const email = session?.user?.email
   if (!email) return NextResponse.json({ error: 'unauthorized', requestId }, { status: 401 })
@@ -71,132 +51,61 @@ export async function POST(req: Request) {
   }
 
   const supa = supabaseServer()
-  const cost = COST[type]
-  const label = LABEL[type]
+  const { data: user } = await supa
+    .from('users')
+    .select('id')
+    .eq('email', email)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!user) return NextResponse.json({ error: 'no user', requestId, clientRunId }, { status: 404 })
 
-  // ---- 1) 원자적 크레딧 차감 -------------------------------------------------
-  const { data: spendResult, error: spendErr } = await supa.rpc('spend_credits', {
-    p_email: email,
-    p_amount: cost,
-    p_label: label,
-  })
-  if (spendErr) {
-    console.error('[interpret/run] spend failed:', { requestId, clientRunId, error: spendErr })
-    if (spendErr.message === 'no user') return NextResponse.json({ error: 'no user', requestId, clientRunId }, { status: 404 })
-    return NextResponse.json({ error: spendErr.message, requestId, clientRunId }, { status: 500 })
-  }
-  if (typeof spendResult !== 'number') {
-    console.error('[interpret/run] spend rpc non-number:', { requestId, clientRunId, spendResult })
-    return NextResponse.json({ error: 'rpc error', requestId, clientRunId }, { status: 500 })
-  }
-  if (spendResult < 0) {
-    const { data: u } = await supa
-      .from('users')
-      .select('credits')
-      .eq('email', email)
-      .is('deleted_at', null)
-      .maybeSingle()
-    return NextResponse.json(
-      { error: 'insufficient credits', credits: u?.credits ?? 0, requestId, clientRunId },
-      { status: 402 },
-    )
-  }
-  let remainingCredits = spendResult
-  console.info('[interpret/run] started:', { requestId, clientRunId, email, type })
+  const { data: existing } = await supa
+    .from('interpret_jobs')
+    .select('id, status')
+    .eq('client_run_id', clientRunId)
+    .maybeSingle()
 
-  // ---- 실패 시 자동 환불 헬퍼 ----------------------------------------------
-  const refund = async (reason: string) => {
-    const { data: ref } = await supa.rpc('refund_credits', {
-      p_email: email,
-      p_amount: cost,
-      p_label: `${label} 자동 환불 (${reason} ${clientRunId})`,
-    })
-    if (typeof ref === 'number') remainingCredits = ref
-  }
-
-  // ---- 2) AI 호출 -----------------------------------------------------------
-  let aiData: {
-    interpretation?: string
-    auspice?: 'auspicious' | 'ominous' | 'neutral'
-    moods?: Mood[]
-    weather?: string
-    pages?: DreamEntry['pages']
-    interpretationBlocks?: DreamEntry['interpretationBlocks']
-    lucky?: DreamEntry['lucky']
-  }
-  try {
-    if (type === 'basic') {
-      const raw = await interpretDream(dream, moods)
-      aiData = { ...raw, moods: (raw.moods ?? []) as Mood[] }
-    } else {
-      const diary = await interpretDiary(dream, moods)
-      aiData = { ...diary, moods: (diary.moods ?? []) as Mood[], pages: attachImageUrls(diary.pages ?? []) }
+  let jobId = existing?.id as string | undefined
+  if (!jobId) {
+    const { data: job, error: insertErr } = await supa
+      .from('interpret_jobs')
+      .insert({
+        user_id: user.id,
+        email,
+        client_run_id: clientRunId,
+        type,
+        dream,
+        moods,
+        source_locale: sourceLocale,
+        status: 'pending',
+        cost: COST[type],
+      })
+      .select('id')
+      .single()
+    if (insertErr || !job) {
+      return NextResponse.json(
+        { error: insertErr?.message ?? 'job create failed', requestId, clientRunId },
+        { status: 500 },
+      )
     }
-  } catch (e) {
-    console.error('[interpret/run] AI failed:', { requestId, clientRunId, error: e })
-    await refund('ai-failed')
+    jobId = job.id as string
+  }
+
+  const { error: invokeErr } = await supa.functions.invoke('interpret-worker', {
+    body: { jobId },
+  })
+  if (invokeErr) {
+    console.error('[interpret/run] worker invoke failed:', { requestId, clientRunId, jobId, error: invokeErr })
+    await supa
+      .from('interpret_jobs')
+      .update({ status: 'failed', error: invokeErr.message, completed_at: new Date().toISOString() })
+      .eq('id', jobId)
     return NextResponse.json(
-      { error: 'AI 해석 중 오류가 발생했어요.', credits: remainingCredits, requestId, clientRunId },
+      { error: `해석 작업 실행을 시작하지 못했어요. ${invokeErr.message}`, requestId, clientRunId, jobId },
       { status: 502 },
     )
   }
 
-  // ---- 3) DB 저장 -----------------------------------------------------------
-  const { data: userRow } = await supa
-    .from('users').select('id').eq('email', email).is('deleted_at', null).maybeSingle()
-  const userId = userRow?.id
-  if (!userId) {
-    await refund('no-user-at-save')
-    return NextResponse.json({ error: 'no user', credits: remainingCredits, requestId, clientRunId }, { status: 404 })
-  }
-
-  const { data: saved, error: saveErr } = await supa
-    .from('dreams')
-    .insert({
-      user_id: userId,
-      dream,
-      interpretation: aiData.interpretation ?? '',
-      moods: (moods.length > 0 ? moods : aiData.moods ?? []) as string[],
-      auspice: aiData.auspice ?? null,
-      type,
-      weather: aiData.weather ?? null,
-      pages: aiData.pages ?? null,
-      interpretation_blocks: aiData.interpretationBlocks ?? null,
-      lucky: aiData.lucky ?? null,
-      shared: false,
-      source_locale: sourceLocale,
-    })
-    .select('id, dream, interpretation, moods, auspice, type, weather, pages, interpretation_blocks, lucky, shared, created_at, deleted_at, translations, source_locale')
-    .single()
-
-  if (saveErr || !saved) {
-    console.error('[interpret/run] save failed:', { requestId, clientRunId, error: saveErr })
-    await refund('save-failed')
-    return NextResponse.json(
-      { error: saveErr?.message ?? 'save failed', credits: remainingCredits, requestId, clientRunId },
-      { status: 500 },
-    )
-  }
-
-  const dreamEntry: DreamEntry & { deletedAt?: string | null } = {
-    id: saved.id as string,
-    dream: saved.dream as string,
-    interpretation: (saved.interpretation ?? '') as string,
-    moods: (saved.moods ?? []) as Mood[],
-    auspice: (saved.auspice ?? undefined) as DreamEntry['auspice'],
-    type: saved.type as 'basic' | 'premium',
-    weather: (saved.weather ?? undefined) as string | undefined,
-    pages: (saved.pages as DreamEntry['pages']) ?? undefined,
-    interpretationBlocks:
-      (saved.interpretation_blocks as DreamEntry['interpretationBlocks']) ?? undefined,
-    lucky: (saved.lucky as DreamEntry['lucky']) ?? undefined,
-    shared: saved.shared as boolean,
-    date: saved.created_at as string,
-    deletedAt: (saved.deleted_at as string | null) ?? null,
-    translations: (saved.translations as Record<string, unknown> | null) ?? null,
-    sourceLocale: (saved.source_locale === 'en' ? 'en' : 'ko'),
-  }
-
-  console.info('[interpret/run] completed:', { requestId, clientRunId, dreamId: dreamEntry.id })
-  return NextResponse.json({ dream: dreamEntry, credits: remainingCredits, requestId, clientRunId })
+  console.info('[interpret/run] queued:', { requestId, clientRunId, jobId, type })
+  return NextResponse.json({ jobId, status: 'pending', requestId, clientRunId }, { status: 202 })
 }

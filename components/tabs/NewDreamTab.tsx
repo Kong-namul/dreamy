@@ -19,6 +19,8 @@ const PREMIUM_LOADING_KEYS = [
   'interpret.premium.4',
 ]
 const PREMIUM_MSG_INTERVAL_MS = 5000
+const JOB_POLL_INTERVAL_MS = 2500
+const JOB_POLL_TIMEOUT_MS = 4 * 60 * 1000
 
 /**
  * 해석 본 실행기.
@@ -65,33 +67,59 @@ async function runInterpret(type: 'basic' | 'premium') {
       }),
     })
 
-    if (res.status === 402) {
-      // 잔액 부족 — 서버가 차감한 것도 없음. 잔액 모달.
-      const body = await res.json().catch(() => ({} as { credits?: number; clientRunId?: string }))
-      if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
-      useDreamStore.getState().setInterpretJob(null)
-      useDreamStore.getState().setCreditModalOpen(true)
-      return
-    }
-
     if (!res.ok) {
-      // AI/저장 실패 — 서버가 이미 환불 완료. 사용자에겐 실패 알림만.
       const body = await res.json().catch(() => ({} as { credits?: number; error?: string; clientRunId?: string }))
       if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
       const s = useDreamStore.getState()
-      s.setInterpretError(`${body.error ?? '일기 저장에 실패했어요. 크레딧은 차감되지 않았거나 자동 환불됩니다.'} 확인 코드: ${body.clientRunId ?? clientRunId}`)
+      if (res.status === 402) {
+        s.setCreditModalOpen(true)
+      } else {
+        s.setInterpretError(`${body.error ?? '일기 작업을 시작하지 못했어요.'} 확인 코드: ${body.clientRunId ?? clientRunId}`)
+      }
       s.setInterpretJob(null)
       return
     }
 
-    const { dream: saved, credits } = await res.json() as { dream: DreamEntry; credits: number }
+    const { jobId } = await res.json() as { jobId: string; clientRunId: string }
+    const startedPollingAt = Date.now()
+
+    while (Date.now() - startedPollingAt < JOB_POLL_TIMEOUT_MS) {
+      await new Promise((resolve) => setTimeout(resolve, JOB_POLL_INTERVAL_MS))
+      const statusRes = await fetch(`/api/interpret/status?jobId=${encodeURIComponent(jobId)}`)
+      const statusBody = await statusRes.json().catch(() => ({})) as {
+        status?: 'pending' | 'running' | 'completed' | 'failed' | 'refunded'
+        dream?: DreamEntry | null
+        credits?: number | null
+        error?: string | null
+        clientRunId?: string
+      }
+
+      if (!statusRes.ok) {
+        throw new Error(statusBody.error ?? 'status check failed')
+      }
+
+      if (statusBody.status === 'completed' && statusBody.dream) {
+        const s = useDreamStore.getState()
+        s.addDream(statusBody.dream)
+        if (typeof statusBody.credits === 'number') s.setCredits(statusBody.credits)
+        s.setInterpretDraft({ dream: '', moods: [] })
+        s.setInterpretJob(null)
+        s.setActiveTab('mydiary')
+        return
+      }
+
+      if (statusBody.status === 'failed' || statusBody.status === 'refunded') {
+        const s = useDreamStore.getState()
+        if (typeof statusBody.credits === 'number') s.setCredits(statusBody.credits)
+        s.setInterpretError(`${statusBody.error ?? '일기 저장에 실패했어요. 크레딧은 자동 환불됩니다.'} 확인 코드: ${statusBody.clientRunId ?? clientRunId}`)
+        s.setInterpretJob(null)
+        return
+      }
+    }
 
     const s = useDreamStore.getState()
-    s.addDream(saved)
-    s.setCredits(credits)
-    s.setInterpretDraft({ dream: '', moods: [] })
+    s.setInterpretError(`일기 작성이 예상보다 오래 걸리고 있어요. 잠시 후 새로고침하면 자동 복구를 확인합니다. 확인 코드: ${clientRunId}`)
     s.setInterpretJob(null)
-    s.setActiveTab('mydiary')
   } catch {
     // 네트워크 실패 — 서버가 차감 전 실패면 무관, 차감 후 실패면 다음 로드 때 원복.
     // (offline fallback 은 이후 이슈로 분리)
