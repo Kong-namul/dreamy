@@ -61,15 +61,7 @@ const PAYMENTS: PaymentMethod[] = [
   {
     id: 'stripe',
     label: 'Stripe',
-    subKey: 'credit.pm.stripe.sub',
-    color: '#635BFF',
-    initial: 'S',
-    logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
-  },
-  {
-    id: 'stripe_crypto',
-    label: 'Stripe Stablecoin',
-    subKey: 'credit.pm.stripeCrypto.sub',
+    subKey: 'credit.pm.stripeGroup.sub',
     color: '#635BFF',
     initial: 'S',
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
@@ -175,6 +167,7 @@ export default function CreditModal() {
   const [payError, setPayError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [successCredits, setSuccessCredits] = useState<number | null>(null)
+  const [stripeExpanded, setStripeExpanded] = useState(false)
   const t = useT()
 
   useEffect(() => {
@@ -198,6 +191,7 @@ export default function CreditModal() {
         setStep('select')
         setPicked(null)
         setSuccessCredits(null)
+        setStripeExpanded(false)
       }, 250)
     }
   }, [creditModalOpen])
@@ -806,6 +800,121 @@ export default function CreditModal() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
                       {PAYMENTS.map((pm) => {
+                        if (pm.id === 'stripe') {
+                          const stripeBusy = payingId === 'stripe' || payingId === 'stripe_crypto'
+                          const disabled = !!payingId
+                          return (
+                            <div
+                              key={pm.id}
+                              style={{
+                                borderRadius: 12,
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.08)',
+                                overflow: 'hidden',
+                                opacity: disabled && !stripeBusy ? 0.5 : 1,
+                              }}
+                            >
+                              <button
+                                onClick={() => {
+                                  if (disabled) return
+                                  setStripeExpanded((open) => !open)
+                                }}
+                                disabled={disabled}
+                                style={{
+                                  width: '100%',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 12,
+                                  padding: '12px 14px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: disabled ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                <PaymentLogo pm={pm} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
+                                  <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4' }}>
+                                    {pm.label}
+                                  </span>
+                                  <span style={{ fontSize: 11, color: '#8890B0' }}>
+                                    {stripeBusy ? t('credit.walletWaiting') : t(pm.subKey)}
+                                  </span>
+                                </div>
+                                <ChevronRightIcon
+                                  size={14}
+                                  style={{
+                                    color: '#555E80',
+                                    transform: stripeExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.15s',
+                                  }}
+                                />
+                              </button>
+
+                              <AnimatePresence initial={false}>
+                                {stripeExpanded && (
+                                  <motion.div
+                                    key="stripe-options"
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.18 }}
+                                    style={{ overflow: 'hidden' }}
+                                  >
+                                    <div style={{ padding: '0 10px 10px 58px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                      <button
+                                        onClick={handleStripe}
+                                        disabled={disabled}
+                                        style={{
+                                          width: '100%',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          padding: '10px 12px',
+                                          borderRadius: 10,
+                                          background: 'rgba(255,255,255,0.045)',
+                                          border: '1px solid rgba(255,255,255,0.08)',
+                                          color: '#E8E8F4',
+                                          cursor: disabled ? 'not-allowed' : 'pointer',
+                                          textAlign: 'left',
+                                        }}
+                                      >
+                                        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                          <span style={{ fontSize: 13, fontWeight: 700 }}>{t('credit.pm.stripeCard.title')}</span>
+                                          <span style={{ fontSize: 11, color: '#8890B0' }}>{t('credit.pm.stripe.sub')}</span>
+                                        </span>
+                                        <ChevronRightIcon size={12} style={{ color: '#555E80' }} />
+                                      </button>
+                                      <button
+                                        onClick={handleStripeCrypto}
+                                        disabled={disabled}
+                                        style={{
+                                          width: '100%',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          padding: '10px 12px',
+                                          borderRadius: 10,
+                                          background: 'rgba(127,119,221,0.12)',
+                                          border: '1px solid rgba(127,119,221,0.25)',
+                                          color: '#E8E8F4',
+                                          cursor: disabled ? 'not-allowed' : 'pointer',
+                                          textAlign: 'left',
+                                        }}
+                                      >
+                                        <span style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                          <span style={{ fontSize: 13, fontWeight: 700 }}>{t('credit.pm.stripeCrypto.title')}</span>
+                                          <span style={{ fontSize: 11, color: '#8890B0' }}>{t('credit.pm.stripeCrypto.sub')}</span>
+                                        </span>
+                                        <ChevronRightIcon size={12} style={{ color: '#555E80' }} />
+                                      </button>
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          )
+                        }
+
                         const busy = payingId === pm.id
                         const disabled = !!payingId
                         return (
