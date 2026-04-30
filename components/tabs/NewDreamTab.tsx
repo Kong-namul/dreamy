@@ -33,6 +33,7 @@ async function runInterpret(type: 'basic' | 'premium') {
 
   const initialMsg = type === 'basic' ? '꿈을 해석하고 있어요...' : PREMIUM_LOADING_MSGS[0]
   const initialKey = type === 'basic' ? 'interpret.basic' : PREMIUM_LOADING_KEYS[0]
+  store.setInterpretError(null)
   store.setInterpretJob({ type, msg: initialMsg, msgKey: initialKey, startedAt: Date.now() })
   store.setActiveTab('mydiary')
 
@@ -73,9 +74,11 @@ async function runInterpret(type: 'basic' | 'premium') {
 
     if (!res.ok) {
       // AI/저장 실패 — 서버가 이미 환불 완료. 사용자에겐 실패 알림만.
-      const body = await res.json().catch(() => ({} as { credits?: number }))
+      const body = await res.json().catch(() => ({} as { credits?: number; error?: string }))
       if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
-      useDreamStore.getState().setInterpretJob(null)
+      const s = useDreamStore.getState()
+      s.setInterpretError(body.error ?? '일기 저장에 실패했어요. 크레딧은 차감되지 않았거나 자동 환불됩니다.')
+      s.setInterpretJob(null)
       return
     }
 
@@ -90,7 +93,9 @@ async function runInterpret(type: 'basic' | 'premium') {
   } catch {
     // 네트워크 실패 — 서버가 차감 전 실패면 무관, 차감 후 실패면 다음 로드 때 원복.
     // (offline fallback 은 이후 이슈로 분리)
-    useDreamStore.getState().setInterpretJob(null)
+    const s = useDreamStore.getState()
+    s.setInterpretError('네트워크가 끊겨 일기 저장을 확인하지 못했어요. 차감된 크레딧은 자동 복구를 확인합니다.')
+    s.setInterpretJob(null)
   } finally {
     if (msgTimer) clearInterval(msgTimer)
   }

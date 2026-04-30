@@ -23,6 +23,8 @@ interface DreamStore {
   commentsByDreamId: Record<string, DreamComment[]>  // 꿈 ID 별 댓글 (공개 꿈 포함)
   openDreamId: string | null     // 전역 상세 모달 제어
   interpretJob: InterpretJob | null   // 진행 중 해석 (탭 전환에도 살아남음)
+  interpretError: string | null        // 마지막 해석 실패 안내
+  recoveryNotice: string | null        // 자동 환불/복구 안내
   interpretDraft: { dream: string; moods: Mood[] }  // 작성 중 꿈 본문 (탭 전환해도 유지)
   locale: 'ko' | 'en'                // UI 언어
   currentUserEmail: string | null    // persist 된 로컬 데이터의 소유자
@@ -48,6 +50,8 @@ interface DreamStore {
   hydrateCreditHistory: (history: CreditTransaction[]) => void
   setInterpretDraft: (draft: { dream: string; moods: Mood[] }) => void
   setInterpretJob: (job: InterpretJob | null) => void
+  setInterpretError: (message: string | null) => void
+  setRecoveryNotice: (message: string | null) => void
   updateInterpretMsg: (msg: string, msgKey?: string) => void
   setLocale: (locale: 'ko' | 'en') => void
   toggleLocale: () => void
@@ -66,6 +70,8 @@ const INITIAL_STATE = {
   commentsByDreamId: {} as Record<string, DreamComment[]>,
   openDreamId: null as string | null,
   interpretJob: null as InterpretJob | null,
+  interpretError: null as string | null,
+  recoveryNotice: null as string | null,
   interpretDraft: { dream: '', moods: [] as Mood[] },
   locale: 'ko' as 'ko' | 'en',
   currentUserEmail: null as string | null,
@@ -93,6 +99,8 @@ export const useDreamStore = create<DreamStore>()(
       commentsByDreamId: {},
       openDreamId: null,
       interpretJob: null,
+      interpretError: null,
+      recoveryNotice: null,
       interpretDraft: { dream: '', moods: [] },
       locale: 'ko',
       currentUserEmail: null,
@@ -240,6 +248,8 @@ export const useDreamStore = create<DreamStore>()(
       hydrateCreditHistory: (history) => set({ creditHistory: history }),
       setInterpretDraft: (draft) => set({ interpretDraft: draft }),
       setInterpretJob: (job) => set({ interpretJob: job }),
+      setInterpretError: (message) => set({ interpretError: message }),
+      setRecoveryNotice: (message) => set({ recoveryNotice: message }),
       updateInterpretMsg: (msg: string, msgKey?: string) => set((s) => s.interpretJob ? { interpretJob: { ...s.interpretJob, msg, msgKey } } : {}),
       setLocale: (locale) => set({ locale }),
       toggleLocale: () => set((s) => ({ locale: s.locale === 'ko' ? 'en' : 'ko' })),

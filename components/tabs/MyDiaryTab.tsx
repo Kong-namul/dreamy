@@ -160,7 +160,18 @@ function DreamCard({ entry: rawEntry, index, onClick, onToggleShared, onDelete }
 }
 
 export default function MyDiaryTab() {
-  const { dreams, nickname, setShared, softDeleteDream, setActiveTab, interpretJob } = useDreamStore()
+  const {
+    dreams,
+    nickname,
+    setShared,
+    softDeleteDream,
+    setActiveTab,
+    interpretJob,
+    interpretError,
+    recoveryNotice,
+    setInterpretError,
+    setRecoveryNotice,
+  } = useDreamStore()
   const [selected, setSelected] = useState<DetailEntry | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const t = useT()
@@ -252,9 +263,63 @@ export default function MyDiaryTab() {
     </motion.div>
   ) : null
 
+  const noticeStack = (interpretError || recoveryNotice) ? (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {recoveryNotice && (
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: 14,
+            background: 'rgba(127,119,221,0.12)',
+            border: '1px solid rgba(127,119,221,0.32)',
+            color: '#C4C0F5',
+            fontSize: 12,
+            lineHeight: 1.5,
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <span>{recoveryNotice}</span>
+          <button
+            onClick={() => setRecoveryNotice(null)}
+            style={{ background: 'none', border: 'none', color: '#C4C0F5', cursor: 'pointer', fontWeight: 700 }}
+          >
+            확인
+          </button>
+        </div>
+      )}
+      {interpretError && (
+        <div
+          style={{
+            padding: '12px 14px',
+            borderRadius: 14,
+            background: 'rgba(196,75,114,0.12)',
+            border: '1px solid rgba(196,75,114,0.32)',
+            color: '#E8899A',
+            fontSize: 12,
+            lineHeight: 1.5,
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <span>{interpretError}</span>
+          <button
+            onClick={() => setInterpretError(null)}
+            style={{ background: 'none', border: 'none', color: '#E8899A', cursor: 'pointer', fontWeight: 700 }}
+          >
+            확인
+          </button>
+        </div>
+      )}
+    </div>
+  ) : null
+
   if (dreams.length === 0 && !interpretJob) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '96px 0', gap: 12 }}>
+        {noticeStack && <div style={{ width: '100%', maxWidth: 360, marginBottom: 12 }}>{noticeStack}</div>}
         <div
           style={{
             width: 56, height: 56, borderRadius: 16,
@@ -301,6 +366,7 @@ export default function MyDiaryTab() {
           {t('diary.subtitle')}
         </p>
       </div>
+      {noticeStack}
       {pendingSkeleton}
       {dreams.map((entry, i) => (
         <DreamCard
