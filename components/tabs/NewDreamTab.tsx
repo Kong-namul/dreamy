@@ -30,6 +30,7 @@ async function runInterpret(type: 'basic' | 'premium') {
   if (store.interpretJob) return   // 이미 진행 중
   const draft = store.interpretDraft
   if (!draft.dream.trim()) return
+  const clientRunId = `dream-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
   const initialMsg = type === 'basic' ? '꿈을 해석하고 있어요...' : PREMIUM_LOADING_MSGS[0]
   const initialKey = type === 'basic' ? 'interpret.basic' : PREMIUM_LOADING_KEYS[0]
@@ -60,12 +61,13 @@ async function runInterpret(type: 'basic' | 'premium') {
         dream: draft.dream,
         moods: draft.moods,
         sourceLocale: useDreamStore.getState().locale,
+        clientRunId,
       }),
     })
 
     if (res.status === 402) {
       // 잔액 부족 — 서버가 차감한 것도 없음. 잔액 모달.
-      const body = await res.json().catch(() => ({} as { credits?: number }))
+      const body = await res.json().catch(() => ({} as { credits?: number; clientRunId?: string }))
       if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
       useDreamStore.getState().setInterpretJob(null)
       useDreamStore.getState().setCreditModalOpen(true)
@@ -74,10 +76,10 @@ async function runInterpret(type: 'basic' | 'premium') {
 
     if (!res.ok) {
       // AI/저장 실패 — 서버가 이미 환불 완료. 사용자에겐 실패 알림만.
-      const body = await res.json().catch(() => ({} as { credits?: number; error?: string }))
+      const body = await res.json().catch(() => ({} as { credits?: number; error?: string; clientRunId?: string }))
       if (typeof body?.credits === 'number') useDreamStore.getState().setCredits(body.credits)
       const s = useDreamStore.getState()
-      s.setInterpretError(body.error ?? '일기 저장에 실패했어요. 크레딧은 차감되지 않았거나 자동 환불됩니다.')
+      s.setInterpretError(`${body.error ?? '일기 저장에 실패했어요. 크레딧은 차감되지 않았거나 자동 환불됩니다.'} 확인 코드: ${body.clientRunId ?? clientRunId}`)
       s.setInterpretJob(null)
       return
     }
@@ -94,7 +96,7 @@ async function runInterpret(type: 'basic' | 'premium') {
     // 네트워크 실패 — 서버가 차감 전 실패면 무관, 차감 후 실패면 다음 로드 때 원복.
     // (offline fallback 은 이후 이슈로 분리)
     const s = useDreamStore.getState()
-    s.setInterpretError('네트워크가 끊겨 일기 저장을 확인하지 못했어요. 차감된 크레딧은 자동 복구를 확인합니다.')
+    s.setInterpretError(`네트워크가 끊겨 일기 저장을 확인하지 못했어요. 차감된 크레딧은 자동 복구를 확인합니다. 확인 코드: ${clientRunId}`)
     s.setInterpretJob(null)
   } finally {
     if (msgTimer) clearInterval(msgTimer)

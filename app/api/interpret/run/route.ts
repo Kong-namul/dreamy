@@ -39,12 +39,17 @@ type RunBody = {
   dream?: string
   moods?: Mood[]
   sourceLocale?: 'ko' | 'en'
+  clientRunId?: string
 }
 
 export async function POST(req: Request) {
+  const requestId =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `run-${Date.now()}`
   const session = await auth()
   const email = session?.user?.email
-  if (!email) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  if (!email) return NextResponse.json({ error: 'unauthorized', requestId }, { status: 401 })
 
   let body: RunBody = {}
   try { body = await req.json() } catch {}
@@ -53,13 +58,14 @@ export async function POST(req: Request) {
   const dream = (body.dream ?? '').toString()
   const moods = Array.isArray(body.moods) ? body.moods : []
   const sourceLocale = body.sourceLocale === 'en' ? 'en' : 'ko'
+  const clientRunId = (body.clientRunId ?? requestId).toString().slice(0, 80)
 
   if (!dream.trim()) {
-    return NextResponse.json({ error: '꿈 내용을 입력해주세요.' }, { status: 400 })
+    return NextResponse.json({ error: '꿈 내용을 입력해주세요.', requestId, clientRunId }, { status: 400 })
   }
   if (dream.length > MAX_DREAM_LENGTH) {
     return NextResponse.json(
-      { error: `꿈 내용은 ${MAX_DREAM_LENGTH}자 이하로 입력해주세요.` },
+      { error: `꿈 내용은 ${MAX_DREAM_LENGTH}자 이하로 입력해주세요.`, requestId, clientRunId },
       { status: 400 },
     )
   }
@@ -75,11 +81,13 @@ export async function POST(req: Request) {
     p_label: label,
   })
   if (spendErr) {
-    if (spendErr.message === 'no user') return NextResponse.json({ error: 'no user' }, { status: 404 })
-    return NextResponse.json({ error: spendErr.message }, { status: 500 })
+    console.error('[interpret/run] spend failed:', { requestId, clientRunId, error: spendErr })
+    if (spendErr.message === 'no user') return NextResponse.json({ error: 'no user', requestId, clientRunId }, { status: 404 })
+    return NextResponse.json({ error: spendErr.message, requestId, clientRunId }, { status: 500 })
   }
   if (typeof spendResult !== 'number') {
-    return NextResponse.json({ error: 'rpc error' }, { status: 500 })
+    console.error('[interpret/run] spend rpc non-number:', { requestId, clientRunId, spendResult })
+    return NextResponse.json({ error: 'rpc error', requestId, clientRunId }, { status: 500 })
   }
   if (spendResult < 0) {
     const { data: u } = await supa
@@ -89,18 +97,19 @@ export async function POST(req: Request) {
       .is('deleted_at', null)
       .maybeSingle()
     return NextResponse.json(
-      { error: 'insufficient credits', credits: u?.credits ?? 0 },
+      { error: 'insufficient credits', credits: u?.credits ?? 0, requestId, clientRunId },
       { status: 402 },
     )
   }
   let remainingCredits = spendResult
+  console.info('[interpret/run] started:', { requestId, clientRunId, email, type })
 
   // ---- 실패 시 자동 환불 헬퍼 ----------------------------------------------
   const refund = async (reason: string) => {
     const { data: ref } = await supa.rpc('refund_credits', {
       p_email: email,
       p_amount: cost,
-      p_label: `${label} 자동 환불 (${reason})`,
+      p_label: `${label} 자동 환불 (${reason} ${clientRunId})`,
     })
     if (typeof ref === 'number') remainingCredits = ref
   }
@@ -124,10 +133,10 @@ export async function POST(req: Request) {
       aiData = { ...diary, moods: (diary.moods ?? []) as Mood[], pages: attachImageUrls(diary.pages ?? []) }
     }
   } catch (e) {
-    console.error('[interpret/run] AI failed:', e)
+    console.error('[interpret/run] AI failed:', { requestId, clientRunId, error: e })
     await refund('ai-failed')
     return NextResponse.json(
-      { error: 'AI 해석 중 오류가 발생했어요.', credits: remainingCredits },
+      { error: 'AI 해석 중 오류가 발생했어요.', credits: remainingCredits, requestId, clientRunId },
       { status: 502 },
     )
   }
@@ -138,7 +147,7 @@ export async function POST(req: Request) {
   const userId = userRow?.id
   if (!userId) {
     await refund('no-user-at-save')
-    return NextResponse.json({ error: 'no user', credits: remainingCredits }, { status: 404 })
+    return NextResponse.json({ error: 'no user', credits: remainingCredits, requestId, clientRunId }, { status: 404 })
   }
 
   const { data: saved, error: saveErr } = await supa
@@ -161,10 +170,10 @@ export async function POST(req: Request) {
     .single()
 
   if (saveErr || !saved) {
-    console.error('[interpret/run] save failed:', saveErr)
+    console.error('[interpret/run] save failed:', { requestId, clientRunId, error: saveErr })
     await refund('save-failed')
     return NextResponse.json(
-      { error: saveErr?.message ?? 'save failed', credits: remainingCredits },
+      { error: saveErr?.message ?? 'save failed', credits: remainingCredits, requestId, clientRunId },
       { status: 500 },
     )
   }
@@ -188,5 +197,6 @@ export async function POST(req: Request) {
     sourceLocale: (saved.source_locale === 'en' ? 'en' : 'ko'),
   }
 
-  return NextResponse.json({ dream: dreamEntry, credits: remainingCredits })
+  console.info('[interpret/run] completed:', { requestId, clientRunId, dreamId: dreamEntry.id })
+  return NextResponse.json({ dream: dreamEntry, credits: remainingCredits, requestId, clientRunId })
 }
