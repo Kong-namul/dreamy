@@ -27,6 +27,7 @@ interface PaymentMethod {
   color: string
   initial: string
   logoUrl: string
+  disabled?: boolean
 }
 
 // 로고 소스:
@@ -49,6 +50,7 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#1652F0',
     initial: 'C',
     logoUrl: 'https://cdn.simpleicons.org/coinbase/FFFFFF',
+    disabled: true,
   },
   {
     id: 'bitpay',
@@ -57,6 +59,7 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#1A2A44',
     initial: 'Ƀ',
     logoUrl: 'https://framerusercontent.com/images/2iIIkkV5Qoskq2dfhwja8G8rFW0.png',
+    disabled: true,
   },
   {
     id: 'stripe',
@@ -73,6 +76,7 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#F3BA2F',
     initial: 'ß',
     logoUrl: 'https://cdn.simpleicons.org/binance/FFFFFF',
+    disabled: true,
   },
 ]
 
@@ -448,7 +452,7 @@ export default function CreditModal() {
   }
 
   const handlePay = (payment: PaymentMethod) => {
-    if (payingId) return  // 이미 진행 중이면 무시
+    if (payingId || payment.disabled) return  // 이미 진행 중이거나 비활성 결제수단이면 무시
     if (payment.id === 'base') {
       handleBasePay()
       return
@@ -910,7 +914,7 @@ export default function CreditModal() {
                         }
 
                         const busy = payingId === pm.id
-                        const disabled = !!payingId
+                        const disabled = !!payingId || !!pm.disabled
                         return (
                           <button
                             key={pm.id}
