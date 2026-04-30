@@ -221,7 +221,21 @@ export const useDreamStore = create<DreamStore>()(
         set({ ...INITIAL_STATE })
       },
       hydrateFromServer: (dreams, deletedDreams) => {
-        set({ dreams, deletedDreams })
+        set((s) => {
+          const serverActiveIds = new Set(dreams.map((d) => d.id))
+          const serverDeletedIds = new Set(deletedDreams.map((d) => d.id))
+          const keepLocalActive = s.dreams.filter(
+            (d) => !serverActiveIds.has(d.id) && !serverDeletedIds.has(d.id),
+          )
+          const keepLocalDeleted = s.deletedDreams.filter(
+            (d) => !serverActiveIds.has(d.id) && !serverDeletedIds.has(d.id),
+          )
+
+          return {
+            dreams: [...keepLocalActive, ...dreams],
+            deletedDreams: [...keepLocalDeleted, ...deletedDreams],
+          }
+        })
       },
       hydrateCreditHistory: (history) => set({ creditHistory: history }),
       setInterpretDraft: (draft) => set({ interpretDraft: draft }),
