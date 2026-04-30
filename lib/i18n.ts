@@ -97,7 +97,7 @@ const TRANSLATIONS: Record<string, { ko: string; en: string }> = {
   'credit.pm.base.sub':    { ko: 'Base Account · USDC 원클릭', en: 'Base Account · One-tap USDC' },
   'credit.pm.bitpay.sub':  { ko: 'Bitcoin · Lightning · 스테이블코인', en: 'Bitcoin · Lightning · Stablecoins' },
   'credit.pm.stripe.sub':  { ko: '카드 결제', en: 'Card payment' },
-  'credit.pm.stripeCrypto.sub': { ko: 'USDC 스테이블코인 결제', en: 'USDC stablecoin payment' },
+  'credit.pm.stripeCrypto.sub': { ko: '크립토로 결제 · 크레딧 자동 지급', en: 'Pay with crypto · credits added automatically' },
   'credit.pm.stripeOnramp.sub': { ko: '크립토 구매용 · 크레딧 자동 지급 없음', en: 'Buy crypto · credits are not added automatically' },
   'credit.pm.binance.sub': { ko: 'Binance 지갑 P2P 결제', en: 'Binance Wallet peer-to-peer' },
   'credit.err.cancelled':  { ko: '결제가 취소되었거나 ID를 받지 못했어요.', en: 'The payment was cancelled or no ID was returned.' },

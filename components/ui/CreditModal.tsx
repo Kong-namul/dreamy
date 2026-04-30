@@ -75,14 +75,6 @@ const PAYMENTS: PaymentMethod[] = [
     logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
   },
   {
-    id: 'stripe_onramp',
-    label: 'Stripe Crypto',
-    subKey: 'credit.pm.stripeOnramp.sub',
-    color: '#635BFF',
-    initial: 'S',
-    logoUrl: 'https://cdn.simpleicons.org/stripe/FFFFFF',
-  },
-  {
     id: 'binance',
     label: 'Binance Pay',
     subKey: 'credit.pm.binance.sub',
