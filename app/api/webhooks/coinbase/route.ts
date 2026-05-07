@@ -1,41 +1,86 @@
 /**
  * POST /api/webhooks/coinbase
  *
- * Coinbase Commerce webhook.
- * X-CC-Webhook-Signature 헤더 (HMAC-SHA256) 로 서명 검증.
+ * Coinbase Business Checkouts webhook (Hook0 표준 서명).
  *
- * charge:confirmed 이벤트 수신 시 크레딧 지급.
- * 멱등성: payments.provider_payment_id unique + status === 'confirmed' 체크.
+ * 옛 Commerce 와 차이:
+ *  - 헤더: X-CC-Webhook-Signature → X-Hook0-Signature
+ *  - 서명 대상: rawBody → `${timestamp}.${headerNames}.${headerValues}.${rawBody}`
+ *  - 5분 replay 윈도우
+ *  - 이벤트: charge:confirmed → checkout.payment.success
  *
- * ref: https://docs.cloud.coinbase.com/commerce/docs/webhooks-overview
+ * 멱등성: payments(method, provider_payment_id) unique + RPC row lock.
+ *
+ * ref: https://docs.cdp.coinbase.com/coinbase-business/checkout-apis/webhooks
  */
 import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { supabaseServer } from '@/lib/supabase/server'
 
-const WEBHOOK_SECRET = process.env.COINBASE_COMMERCE_WEBHOOK_SECRET
+const WEBHOOK_SECRET = process.env.COINBASE_CHECKOUT_WEBHOOK_SECRET
+const MAX_AGE_SECONDS = 5 * 60
 
 export const runtime = 'nodejs'
+
+/**
+ * Hook0 시그니처 헤더 파싱.
+ * 형식 예: "t=1714578900,h=x-foo x-bar,v0=abc123..."
+ */
+function parseHook0Header(headerValue: string): {
+  timestamp?: string
+  headerNames?: string
+  signature?: string
+} {
+  const out: { timestamp?: string; headerNames?: string; signature?: string } = {}
+  for (const part of headerValue.split(',')) {
+    const [k, ...rest] = part.split('=')
+    const v = rest.join('=').trim()
+    const key = k?.trim()
+    if (key === 't') out.timestamp = v
+    else if (key === 'h') out.headerNames = v
+    else if (key === 'v0') out.signature = v
+  }
+  return out
+}
 
 export async function POST(req: Request) {
   if (!WEBHOOK_SECRET) {
     return NextResponse.json({ error: 'webhook secret not configured' }, { status: 500 })
   }
 
-  const sig = req.headers.get('x-cc-webhook-signature')
-  if (!sig) return NextResponse.json({ error: 'missing signature' }, { status: 400 })
+  const sigHeader = req.headers.get('x-hook0-signature')
+  if (!sigHeader) return NextResponse.json({ error: 'missing signature' }, { status: 400 })
+
+  const { timestamp, headerNames, signature } = parseHook0Header(sigHeader)
+  if (!timestamp || !signature) {
+    return NextResponse.json({ error: 'malformed signature header' }, { status: 400 })
+  }
+
+  // 5분 replay 윈도우
+  const tsNum = Number(timestamp)
+  if (!Number.isFinite(tsNum) || Math.abs(Date.now() / 1000 - tsNum) > MAX_AGE_SECONDS) {
+    return NextResponse.json({ error: 'timestamp out of range' }, { status: 401 })
+  }
 
   const rawBody = await req.text()
 
-  // HMAC-SHA256 검증
+  // signed payload = `${timestamp}.${headerNames}.${headerValues}.${rawBody}`
+  // headerValues: h 필드의 헤더이름들을 공백 분리 → 각각의 실제 값을 dot-join
+  const headerValues = (headerNames ?? '')
+    .split(' ')
+    .filter(Boolean)
+    .map(name => req.headers.get(name) ?? '')
+    .join('.')
+
+  const signedPayload = `${timestamp}.${headerNames ?? ''}.${headerValues}.${rawBody}`
   const expected = crypto
     .createHmac('sha256', WEBHOOK_SECRET)
-    .update(rawBody)
+    .update(signedPayload)
     .digest('hex')
 
   const sigOk = (() => {
     try {
-      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig))
+      return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))
     } catch {
       return false
     }
@@ -46,26 +91,30 @@ export async function POST(req: Request) {
   }
 
   let event: {
+    eventType?: string
     type?: string
-    data?: {
-      id?: string
-      metadata?: { paymentId?: string; userId?: string }
-      payments?: Array<{ transaction_id?: string }>
-    }
+    id?: string
+    metadata?: { paymentId?: string; userId?: string }
+    transactionHash?: string
+    status?: string
   } = {}
   try { event = JSON.parse(rawBody) } catch {
     return NextResponse.json({ error: 'bad json' }, { status: 400 })
   }
 
-  // 관심 이벤트만 처리
-  if (event.type !== 'charge:confirmed' && event.type !== 'charge:resolved') {
-    return NextResponse.json({ ok: true, ignored: event.type })
+  // payload 가 Hook0 envelope 으로 감쌀 가능성 대비: top-level 또는 data.* 둘 다 시도
+  const payloadAny = event as unknown as { data?: typeof event }
+  const checkout = payloadAny.data ?? event
+  const eventType = event.eventType ?? event.type
+  const checkoutId = checkout.id
+  const paymentId = checkout.metadata?.paymentId
+
+  if (eventType !== 'checkout.payment.success') {
+    return NextResponse.json({ ok: true, ignored: eventType ?? 'unknown' })
   }
 
-  const chargeId = event.data?.id
-  const paymentId = event.data?.metadata?.paymentId
-  if (!chargeId || !paymentId) {
-    return NextResponse.json({ error: 'missing chargeId or paymentId' }, { status: 400 })
+  if (!checkoutId || !paymentId) {
+    return NextResponse.json({ error: 'missing checkoutId or paymentId' }, { status: 400 })
   }
 
   const supa = supabaseServer()
@@ -74,20 +123,20 @@ export async function POST(req: Request) {
     .from('payments')
     .select('id')
     .eq('id', paymentId)
-    .eq('provider_payment_id', chargeId)
+    .eq('provider_payment_id', checkoutId)
     .maybeSingle()
 
   if (!payment) {
     return NextResponse.json({ error: 'payment not found' }, { status: 404 })
   }
 
-  const txId = event.data?.payments?.[0]?.transaction_id ?? null
+  const txHash = checkout.transactionHash ?? null
 
   const { data: credits, error: rpcErr } = await supa.rpc('confirm_payment_by_provider', {
     p_method: 'coinbase_commerce',
-    p_provider_payment_id: chargeId,
-    p_provider_tx_hash: txId,
-    p_label: '크레딧 구매 · Coinbase Commerce',
+    p_provider_payment_id: checkoutId,
+    p_provider_tx_hash: txHash,
+    p_label: '크레딧 구매 · Coinbase',
   })
 
   if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })

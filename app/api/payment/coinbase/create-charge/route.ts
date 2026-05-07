@@ -5,21 +5,29 @@
  *
  * 1) 세션 확인
  * 2) payments row pending 생성
- * 3) Coinbase Commerce charge 생성
- * 4) hosted_url 반환 → 클라이언트가 리다이렉트
+ * 3) Coinbase Business Checkouts API 로 checkout 생성 (USDC on Base)
+ * 4) checkout url 반환 → 클라이언트가 리다이렉트
  *
- * API ref: https://docs.cloud.coinbase.com/commerce/reference/createcharge
+ * 옛 Coinbase Commerce 와 다른 점:
+ *  - 주소: api.commerce.coinbase.com → business.coinbase.com
+ *  - 인증: X-CC-Api-Key → ES256 JWT Bearer (lib/coinbaseJwt.ts)
+ *  - 통화: USD (다중 코인 자동환산) → USDC 고정 (Base 네트워크)
+ *  - 응답: data.hosted_url → url (top-level)
+ *
+ * API ref: https://docs.cdp.coinbase.com/coinbase-business/checkout-apis
  */
 import { NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import { supabaseServer } from '@/lib/supabase/server'
 import { getCreditPackage } from '@/lib/creditPackages'
+import { generateCoinbaseJwt, isCoinbaseConfigured } from '@/lib/coinbaseJwt'
 
-const COINBASE_API_KEY = process.env.COINBASE_COMMERCE_API_KEY
+const CHECKOUT_PATH = '/api/v1/checkouts'
+const CHECKOUT_URL = `https://business.coinbase.com${CHECKOUT_PATH}`
 
 export async function POST(req: Request) {
-  if (!COINBASE_API_KEY) {
-    return NextResponse.json({ error: 'Coinbase Commerce not configured' }, { status: 500 })
+  if (!isCoinbaseConfigured()) {
+    return NextResponse.json({ error: 'Coinbase Business not configured' }, { status: 500 })
   }
 
   const session = await auth()
@@ -47,7 +55,7 @@ export async function POST(req: Request) {
     .insert({
       user_id: user.id,
       package_id: pkg.id,
-      method: 'coinbase_commerce',
+      method: 'coinbase_commerce', // DB enum 호환 위해 기존 값 재사용 (실은 Checkouts API)
       credits: pkg.credits,
       amount_usd_cents: pkg.priceUsdCents,
       status: 'pending',
@@ -60,54 +68,65 @@ export async function POST(req: Request) {
 
   const origin = process.env.NEXT_PUBLIC_APP_URL ?? 'https://dreamy-tau.vercel.app'
 
-  let chargeRes: Response
+  let token: string
   try {
-    chargeRes = await fetch('https://api.commerce.coinbase.com/charges', {
+    token = generateCoinbaseJwt('POST', CHECKOUT_PATH)
+  } catch (err) {
+    return NextResponse.json({ error: 'jwt failed', detail: (err as Error).message }, { status: 500 })
+  }
+
+  let checkoutRes: Response
+  try {
+    checkoutRes = await fetch(CHECKOUT_URL, {
       method: 'POST',
       headers: {
-        'X-CC-Api-Key': COINBASE_API_KEY,
-        'X-CC-Version': '2018-03-22',
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
+        'X-Idempotency-Key': paymentRow.id,
       },
       body: JSON.stringify({
-        name: `Dreamy ${pkg.label} 팩`,
-        description: `${pkg.credits} 크레딧`,
-        pricing_type: 'fixed_price',
-        local_price: {
-          amount: (pkg.priceUsdCents / 100).toFixed(2),
-          currency: 'USD',
-        },
+        amount: (pkg.priceUsdCents / 100).toFixed(2),
+        currency: 'USDC',
+        network: 'base',
+        description: `Dreamy ${pkg.label} 팩 · ${pkg.credits} 크레딧`,
         metadata: {
           paymentId: paymentRow.id,
           userId: user.id,
           packageId: pkg.id,
         },
-        redirect_url: `${origin}/payment/success?id=${paymentRow.id}`,
-        cancel_url: `${origin}/payment/cancel?id=${paymentRow.id}`,
+        successRedirectUrl: `${origin}/payment/success?id=${paymentRow.id}`,
+        failRedirectUrl: `${origin}/payment/cancel?id=${paymentRow.id}`,
       }),
     })
   } catch (err) {
     return NextResponse.json({ error: 'coinbase unreachable', detail: (err as Error).message }, { status: 502 })
   }
 
-  const chargeJson = await chargeRes.json().catch(() => ({}))
-  if (!chargeRes.ok || !chargeJson?.data?.hosted_url) {
+  const checkoutJson = await checkoutRes.json().catch(() => ({})) as {
+    id?: string
+    url?: string
+    // 혹시 응답이 data 로 감싸져 오면 fallback
+    data?: { id?: string; url?: string }
+  }
+
+  const checkoutId = checkoutJson.id ?? checkoutJson.data?.id
+  const checkoutUrl = checkoutJson.url ?? checkoutJson.data?.url
+
+  if (!checkoutRes.ok || !checkoutId || !checkoutUrl) {
     return NextResponse.json(
-      { error: 'charge creation failed', detail: chargeJson },
-      { status: chargeRes.status || 502 },
+      { error: 'checkout creation failed', status: checkoutRes.status, detail: checkoutJson },
+      { status: checkoutRes.status || 502 },
     )
   }
 
-  const charge = chargeJson.data as { id: string; hosted_url: string }
-
   await supa
     .from('payments')
-    .update({ provider_payment_id: charge.id })
+    .update({ provider_payment_id: checkoutId })
     .eq('id', paymentRow.id)
 
   return NextResponse.json({
     paymentId: paymentRow.id,
-    chargeId: charge.id,
-    checkoutUrl: charge.hosted_url,
+    chargeId: checkoutId,
+    checkoutUrl,
   })
 }
