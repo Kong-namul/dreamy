@@ -44,3 +44,6 @@ next-env.d.ts
 .claude/
 _md/
 .env*.local
+
+# Coinbase Developer Platform key files (CDP CLI auth)
+cdp_api_key*.json
