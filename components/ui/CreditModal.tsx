@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { useDreamStore } from '@/store/dreamStore'
 import { DiamondIcon, CloseIcon, ArrowLeftIcon, ChevronRightIcon } from '@/components/ui/Icons'
-import { pay } from '@base-org/account'
 import { useT } from '@/lib/i18n'
 
 interface Package {
@@ -32,17 +31,8 @@ interface PaymentMethod {
 
 // 로고 소스:
 //  · Simple Icons CDN (https://cdn.simpleicons.org/<slug>/<hex>) — coinbase/bitcoin/stripe/binance 지원
-//  · Base: GitHub org 아바타 (Base 전용 파란 원형 B 로고)
 //  · 실패 시 initial 폴백
 const PAYMENTS: PaymentMethod[] = [
-  {
-    id: 'base',
-    label: 'Base Pay',
-    subKey: 'credit.pm.base.sub',
-    color: '#0052FF',
-    initial: 'B',
-    logoUrl: 'https://avatars.githubusercontent.com/u/108554348?s=64',
-  },
   {
     id: 'coinbase',
     label: 'Coinbase Commerce',
@@ -79,16 +69,6 @@ const PAYMENTS: PaymentMethod[] = [
   },
 ]
 
-// Base Pay 아이콘 — 2024 리브랜드: 파란 둥근 사각형 배경 + 흰 Base 심볼 (원 + 오른쪽 수평선)
-// 부모 타일(borderRadius 10)에 이미 파란 바탕이라 SVG 안에서는 symbol 만 그린다.
-function BaseSymbol() {
-  return (
-    <svg width="100%" height="100%" viewBox="0 0 111 111" fill="white" xmlns="http://www.w3.org/2000/svg">
-      <path d="M54.921 110.034C85.359 110.034 110.034 85.402 110.034 55.017C110.034 24.6319 85.359 0 54.921 0C26.0432 0 2.35281 22.1714 0 50.3923H72.8467V59.6416H0C2.35281 87.8625 26.0432 110.034 54.921 110.034Z" />
-    </svg>
-  )
-}
-
 // Coinbase 2022 모노그램 (Pentagram 리디자인) — 흰 원반에 가운데 정사각형 cut-out
 // 정사각형이 "C" 의 네거티브 스페이스 형성. 타일 bg 가 사각형 안으로 비침.
 function CoinbaseSymbol() {
@@ -109,15 +89,14 @@ function PaymentLogo({ pm }: { pm: PaymentMethod }) {
   // 구조 단순화: 36px 타일 안에 padding 으로 로고 크기 조절.
   //   padding 큼  → 로고 작음
   //   padding 작음 → 로고 큼
-  // 브랜드별 padding: base 풀블리드(0), coinbase 약간(7), bitpay 거의풀(4), stripe 크게(10), 나머지 중간(8)
+  // 브랜드별 padding: coinbase 약간(7), bitpay 거의풀(0), stripe 크게(10), 나머지 중간(8)
   const padding =
-    pm.id === 'base' ? 9 :     // 리브랜드 후 더 "app icon" 느낌: 바탕 여백 늘려서 rounded-square 가독성 ↑
     pm.id === 'coinbase' ? 7 :
     pm.id === 'bitpay' ? 0 :   // 앱 아이콘 — 타일에 꽉차게
     pm.id === 'stripe' ? 10 :
     8
 
-  const tileBorderRadius = pm.id === 'base' ? 12 : 10   // Base 는 더 둥글게 (iOS app icon 스타일)
+  const tileBorderRadius = 10
 
   return (
     <div
@@ -136,9 +115,7 @@ function PaymentLogo({ pm }: { pm: PaymentMethod }) {
         justifyContent: 'center',
       }}
     >
-      {pm.id === 'base' ? (
-        <BaseSymbol />
-      ) : pm.id === 'coinbase' ? (
+      {pm.id === 'coinbase' ? (
         <CoinbaseSymbol />
       ) : err ? (
         <span style={{ fontSize: 16, fontWeight: 700 }}>{pm.initial}</span>
@@ -217,62 +194,6 @@ export default function CreditModal() {
   const handlePickPackage = (pkg: Package) => {
     setPicked(pkg)
     setStep('pay')
-  }
-
-  const handleBasePay = async () => {
-    if (!picked) return
-    setPayError(null)
-    setPayingId('base')
-
-    const merchant = process.env.NEXT_PUBLIC_BASE_PAY_MERCHANT
-    const testnet = process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true'
-
-    if (!merchant) {
-      setPayError(t('credit.err.merchant'))
-      setPayingId(null)
-      return
-    }
-
-    // 패키지 USD 금액 (크레딧 패키지 마스터와 동일)
-    const amountUsd = picked.id === 'basic' ? '0.75'
-                    : picked.id === 'popular' ? '1.90'
-                    : '3.75'
-
-    try {
-      // Base Pay SDK — 지갑 앱이 열려 송금 확인을 받음
-      const result = await pay({
-        amount: amountUsd,
-        to: merchant,
-        testnet,
-      })
-      if (!result || !('id' in result) || !result.id) {
-        throw new Error(t('credit.err.cancelled'))
-      }
-
-      // 서버 검증 → 크레딧 지급
-      const res = await fetch('/api/payment/verify-base', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ baseId: result.id, packageId: picked.id }),
-      })
-      const body = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        throw new Error(body.error ?? t('credit.err.verify'))
-      }
-
-      // 성공 → 로컬 store 에도 크레딧 반영 (서버는 이미 반영함)
-      addCredits(picked.credits, {
-        type: 'purchase',
-        label: `${t(picked.labelKey)}${t('credit.pkg.suffix')} · Base Pay${testnet ? ' (Testnet)' : ''}`,
-        priceWon: picked.price,
-      })
-      setCreditModalOpen(false)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : t('credit.err.generic')
-      setPayError(msg)
-    } finally {
-      setPayingId(null)
-    }
   }
 
   const handleStripe = async () => {
@@ -452,10 +373,6 @@ export default function CreditModal() {
 
   const handlePay = (payment: PaymentMethod) => {
     if (payingId || payment.disabled) return  // 이미 진행 중이거나 비활성 결제수단이면 무시
-    if (payment.id === 'base') {
-      handleBasePay()
-      return
-    }
     if (payment.id === 'coinbase') {
       handleCoinbase()
       return
@@ -947,8 +864,7 @@ export default function CreditModal() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 2, textAlign: 'left', flex: 1, minWidth: 0 }}>
                               <span style={{ fontSize: 14, fontWeight: 600, color: '#E8E8F4', display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                                 {pm.label}
-                                {((pm.id === 'base' && process.env.NEXT_PUBLIC_BASE_PAY_TESTNET === 'true')
-                                  || (pm.id === 'bitpay' && process.env.NEXT_PUBLIC_BITPAY_TESTNET === 'true')) && (
+                                {pm.id === 'bitpay' && process.env.NEXT_PUBLIC_BITPAY_TESTNET === 'true' && (
                                   <span style={{ fontSize: 10, fontWeight: 700, color: '#C4C0F5', background: 'rgba(127,119,221,0.18)', padding: '2px 6px', borderRadius: 999 }}>
                                     TESTNET
                                   </span>

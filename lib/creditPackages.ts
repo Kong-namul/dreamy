@@ -10,7 +10,7 @@ export interface CreditPackage {
   label: string
   credits: number
   priceKrw: number
-  priceUsdCents: number    // Base Pay / 해외 결제용
+  priceUsdCents: number    // 해외 결제용
 }
 
 export const CREDIT_PACKAGES: Record<CreditPackageId, CreditPackage> = {

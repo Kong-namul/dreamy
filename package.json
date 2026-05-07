@@ -12,8 +12,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
-    "@base-org/account": "^2.5.4",
-    "@base-org/account-ui": "^1.0.1",
     "@supabase/supabase-js": "^2.104.0",
     "@types/jsonwebtoken": "^9.0.10",
     "framer-motion": "^12.38.0",
