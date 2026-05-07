@@ -15,19 +15,6 @@ const hasGoogleCredentials =
 const enableMockAuth = process.env.ENABLE_MOCK_AUTH === 'true'
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  // TEMP DIAGNOSTIC: Vercel 로그에 NextAuth 내부 에러 풀어 출력. 원인 잡으면 즉시 되돌릴 것.
-  debug: true,
-  logger: {
-    error(error) {
-      console.error('[next-auth][error]', error?.name ?? '', error?.message ?? '', error?.stack ?? '')
-    },
-    warn(code) {
-      console.warn('[next-auth][warn]', code)
-    },
-    debug(message, metadata) {
-      console.log('[next-auth][debug]', message, metadata ?? '')
-    },
-  },
   providers: [
     ...(hasGoogleCredentials
       ? [
