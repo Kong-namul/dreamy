@@ -1,14 +1,19 @@
 /**
  * Coinbase Developer Platform JWT 생성기.
  *
- * 새 Coinbase Business API (Checkouts 등) 는 매 요청마다 ES256 서명된
+ * 새 Coinbase Business API (Checkouts 등) 는 매 요청마다 EdDSA 서명된
  * 단명 JWT 를 Authorization: Bearer 로 요구. 옛 Commerce 의 X-CC-Api-Key
  * 단순 헤더 인증과 다름.
+ *
+ * 알고리즘 노트: CDP 포털이 새 키를 만들 때 기본값으로 Ed25519 키를 발급
+ * (ECDSA 도 옵션으로 선택 가능). 우리는 발급된 키 종류에 맞춰 EdDSA 로
+ * 서명. @types/jsonwebtoken 의 Algorithm union 에 EdDSA 가 빠져있어
+ * 캐스팅 처리.
  *
  * 참고: https://docs.cdp.coinbase.com/coinbase-business/authentication-authorization
  */
 import 'server-only'
-import jwt, { type JwtHeader } from 'jsonwebtoken'
+import jwt, { type Algorithm, type JwtHeader } from 'jsonwebtoken'
 import crypto from 'crypto'
 
 const KEY_NAME = process.env.COINBASE_CDP_KEY_NAME
@@ -44,12 +49,13 @@ export function generateCoinbaseJwt(method: string, path: string): string {
     },
     privateKey,
     {
-      algorithm: 'ES256',
+      // @types/jsonwebtoken 의 Algorithm union 에 EdDSA 가 없어 캐스팅.
+      algorithm: 'EdDSA' as Algorithm,
       // CDP 는 표준 JwtHeader 외에 nonce 헤더를 요구함 → 타입 확장.
       header: {
         kid: KEY_NAME,
         nonce: crypto.randomBytes(16).toString('hex'),
-        alg: 'ES256',
+        alg: 'EdDSA',
         typ: 'JWT',
       } as JwtHeader & { nonce: string },
     },
