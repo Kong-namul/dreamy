@@ -24,7 +24,8 @@ export const runtime = 'nodejs'
 
 /**
  * Hook0 시그니처 헤더 파싱.
- * 형식 예: "t=1714578900,h=x-foo x-bar,v0=abc123..."
+ * 형식 예: "t=1714578900,h=x-foo x-bar,v1=abc123..."
+ * (CDP webhook docs 기준: t / h / v1)
  */
 function parseHook0Header(headerValue: string): {
   timestamp?: string
@@ -38,7 +39,7 @@ function parseHook0Header(headerValue: string): {
     const key = k?.trim()
     if (key === 't') out.timestamp = v
     else if (key === 'h') out.headerNames = v
-    else if (key === 'v0') out.signature = v
+    else if (key === 'v1') out.signature = v
   }
   return out
 }
