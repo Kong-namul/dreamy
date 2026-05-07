@@ -1,26 +1,34 @@
 /**
  * Coinbase Developer Platform JWT 생성기.
  *
- * 새 Coinbase Business API (Checkouts 등) 는 매 요청마다 EdDSA 서명된
- * 단명 JWT 를 Authorization: Bearer 로 요구. 옛 Commerce 의 X-CC-Api-Key
- * 단순 헤더 인증과 다름.
+ * 새 CDP API 키 포맷 (2026 portal 발급분):
+ *   { id: "<uuid>", privateKey: "<base64-64bytes>" }
+ *   - id      → kid / sub
+ *   - privateKey → base64 디코드 후 첫 32바이트가 Ed25519 seed
  *
- * 알고리즘 노트: CDP 포털이 새 키를 만들 때 기본값으로 Ed25519 키를 발급
- * (ECDSA 도 옵션으로 선택 가능). 우리는 발급된 키 종류에 맞춰 EdDSA 로
- * 서명. @types/jsonwebtoken 의 Algorithm union 에 EdDSA 가 빠져있어
- * 캐스팅 처리.
+ * 옛 PEM 포맷과 다음이 다름:
+ *   - sub/kid 가 UUID 만 (옛 'organizations/.../apiKeys/UUID' 아님)
+ *   - claim 이름 'uri' (단수) → 'uris' (배열)
+ *   - jsonwebtoken 라이브러리가 raw Ed25519 seed 를 못 먹어서
+ *     Node crypto.sign(null, ...) 로 직접 서명 (Ed25519 는 hash 인자 null)
+ *
+ * CDP CLI 의 동작 (기존 검증된 구현) 을 그대로 따름.
  *
  * 참고: https://docs.cdp.coinbase.com/coinbase-business/authentication-authorization
  */
 import 'server-only'
-import jwt, { type Algorithm, type JwtHeader } from 'jsonwebtoken'
 import crypto from 'crypto'
 
-const KEY_NAME = process.env.COINBASE_CDP_KEY_NAME
+const KEY_ID = process.env.COINBASE_CDP_KEY_NAME
 const PRIVATE_KEY_RAW = process.env.COINBASE_CDP_PRIVATE_KEY
 
 export function isCoinbaseConfigured(): boolean {
-  return Boolean(KEY_NAME && PRIVATE_KEY_RAW)
+  return Boolean(KEY_ID && PRIVATE_KEY_RAW)
+}
+
+function base64Url(input: Buffer | string): string {
+  const buf = typeof input === 'string' ? Buffer.from(input) : input
+  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 /**
@@ -29,35 +37,48 @@ export function isCoinbaseConfigured(): boolean {
  * @param path '/api/v1/checkouts' 처럼 슬래시로 시작
  */
 export function generateCoinbaseJwt(method: string, path: string): string {
-  if (!KEY_NAME || !PRIVATE_KEY_RAW) {
+  if (!KEY_ID || !PRIVATE_KEY_RAW) {
     throw new Error('Coinbase CDP key not configured (COINBASE_CDP_KEY_NAME / COINBASE_CDP_PRIVATE_KEY missing)')
   }
 
-  // Vercel 환경변수에 PEM 을 넣을 때 줄바꿈이 \n 문자로 들어오는 경우가 있음 → 실제 줄바꿈으로 복원
-  const privateKey = PRIVATE_KEY_RAW.replace(/\\n/g, '\n')
-
   const now = Math.floor(Date.now() / 1000)
-  const uri = `${method} business.coinbase.com${path}`
+  const nonce = crypto.randomBytes(16).toString('hex')
+  const host = 'business.coinbase.com'
 
-  return jwt.sign(
-    {
-      iss: 'cdp',
-      sub: KEY_NAME,
-      nbf: now,
-      exp: now + 120,
-      uri,
-    },
-    privateKey,
-    {
-      // @types/jsonwebtoken 의 Algorithm union 에 EdDSA 가 없어 캐스팅.
-      algorithm: 'EdDSA' as Algorithm,
-      // CDP 는 표준 JwtHeader 외에 nonce 헤더를 요구함 → 타입 확장.
-      header: {
-        kid: KEY_NAME,
-        nonce: crypto.randomBytes(16).toString('hex'),
-        alg: 'EdDSA',
-        typ: 'JWT',
-      } as JwtHeader & { nonce: string },
-    },
-  )
+  const header = {
+    alg: 'EdDSA',
+    typ: 'JWT',
+    kid: KEY_ID,
+    nonce,
+  }
+
+  const payload = {
+    sub: KEY_ID,
+    iss: 'cdp',
+    nbf: now,
+    iat: now,
+    exp: now + 120,
+    uris: [`${method} ${host}${path}`],
+  }
+
+  const headerPart = base64Url(JSON.stringify(header))
+  const payloadPart = base64Url(JSON.stringify(payload))
+  const signingInput = `${headerPart}.${payloadPart}`
+
+  // base64 디코드 → 첫 32바이트(seed) → PKCS8 ASN.1 래핑 → Ed25519 PrivateKey
+  const decoded = Buffer.from(PRIVATE_KEY_RAW, 'base64')
+  const seed = decoded.subarray(0, 32)
+  const pkcs8Header = Buffer.from('302e020100300506032b657004220420', 'hex')
+  const pkcs8Der = Buffer.concat([pkcs8Header, seed])
+
+  const privateKey = crypto.createPrivateKey({
+    key: pkcs8Der,
+    format: 'der',
+    type: 'pkcs8',
+  })
+
+  // Ed25519 는 별도 hash 인자 없음 (null) — RFC 8032
+  const signature = crypto.sign(null, Buffer.from(signingInput), privateKey)
+
+  return `${signingInput}.${base64Url(signature)}`
 }
