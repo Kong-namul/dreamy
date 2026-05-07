@@ -50,7 +50,6 @@ const PAYMENTS: PaymentMethod[] = [
     color: '#1652F0',
     initial: 'C',
     logoUrl: 'https://cdn.simpleicons.org/coinbase/FFFFFF',
-    disabled: true,
   },
   {
     id: 'bitpay',
