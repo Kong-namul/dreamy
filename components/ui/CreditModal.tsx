@@ -330,6 +330,10 @@ export default function CreditModal() {
     if (!picked) return
     setPayError(null)
     setPayingId('coinbase')
+
+    // Stripe 와 동일 패턴: async 안의 window.open 은 팝업 차단되므로 fetch 전에 동기적으로 빈 탭을 먼저 연다.
+    const newTab = window.open('', '_blank')
+
     try {
       const res = await fetch('/api/payment/coinbase/create-charge', {
         method: 'POST',
@@ -338,10 +342,19 @@ export default function CreditModal() {
       })
       const body = await res.json().catch(() => ({}))
       if (!res.ok || !body.checkoutUrl) {
+        newTab?.close()
         throw new Error(body.error ?? t('credit.err.invoice'))
       }
-      window.location.assign(body.checkoutUrl)
+      if (newTab) {
+        newTab.location.href = body.checkoutUrl
+      } else {
+        setPayError(t('credit.err.popup'))
+        setPayingId(null)
+        return
+      }
+      setPayingId(null)
     } catch (err) {
+      newTab?.close()
       const msg = err instanceof Error ? err.message : t('credit.err.generic')
       setPayError(msg)
       setPayingId(null)
