@@ -53,7 +53,12 @@ export default function RefundButton({ paymentId }: { paymentId: string }) {
                 })
                 const body = await res.json().catch(() => ({}))
                 if (!res.ok) {
-                  setState({ kind: 'error', message: body.error ?? `HTTP ${res.status}` })
+                  // 서버가 wrap 한 모양: { error, providerStatus? }
+                  const parts: string[] = []
+                  if (body.error) parts.push(String(body.error))
+                  if (body.providerStatus) parts.push(`(코인베이스 ${body.providerStatus})`)
+                  if (parts.length === 0) parts.push(`HTTP ${res.status}`)
+                  setState({ kind: 'error', message: parts.join(' ') })
                   return
                 }
                 setState({
@@ -104,8 +109,11 @@ export default function RefundButton({ paymentId }: { paymentId: string }) {
 
   if (state.kind === 'error') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 180 }}>
-        <span style={{ color: '#E36B7F', fontSize: 11 }}>실패: {state.message}</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, minWidth: 220, maxWidth: 320 }}>
+        <span style={{ color: '#E36B7F', fontSize: 11, fontWeight: 700 }}>실패</span>
+        <span style={{ color: '#E36B7F', fontSize: 10, lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+          {state.message}
+        </span>
         <button
           onClick={() => setState({ kind: 'idle' })}
           style={{
@@ -116,6 +124,7 @@ export default function RefundButton({ paymentId }: { paymentId: string }) {
             border: 'none',
             borderRadius: 6,
             cursor: 'pointer',
+            marginTop: 4,
           }}
         >
           다시 시도

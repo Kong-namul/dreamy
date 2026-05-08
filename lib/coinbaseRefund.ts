@@ -73,14 +73,32 @@ export async function refundCheckout(
     return { ok: false, status: 500, error: `fetch failed: ${(err as Error).message}` }
   }
 
-  let json: unknown
-  try { json = await res.json() } catch { json = null }
+  const rawText = await res.text()
+  let json: unknown = null
+  try { json = JSON.parse(rawText) } catch { /* leave null */ }
 
   if (!res.ok) {
+    // Coinbase 가 어떤 모양으로든 에러 본문을 줄 수 있어, 가능한 후보 다 훑고
+    // 마지막엔 raw text 일부를 같이 노출 (진단 우선).
+    const j = json as Record<string, unknown> | null
+    const fields = [
+      j?.message,
+      j?.error,
+      (j?.error as Record<string, unknown> | undefined)?.message,
+      (j?.errors as unknown[])?.[0],
+    ].filter(v => typeof v === 'string') as string[]
+
     const detail =
-      (json as { message?: string; error?: string } | null)?.message ??
-      (json as { message?: string; error?: string } | null)?.error ??
-      `HTTP ${res.status}`
+      fields[0] ??
+      (rawText ? rawText.slice(0, 240) : `HTTP ${res.status}`)
+
+    console.error('[coinbase][refund] failed', {
+      status: res.status,
+      checkoutId,
+      amount,
+      body: rawText.slice(0, 800),
+    })
+
     return { ok: false, status: res.status, error: detail }
   }
 
