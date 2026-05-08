@@ -8,9 +8,18 @@ type State =
   | { kind: 'done'; refundId: string; refundStatus: string }
   | { kind: 'error'; message: string }
 
-export default function RefundButton({ paymentId }: { paymentId: string }) {
+interface Props {
+  paymentId: string
+  /** 결제 시점의 USD 금액 (cents). 환불 기본값으로 채움. */
+  defaultAmountUsdCents?: number | null
+}
+
+export default function RefundButton({ paymentId, defaultAmountUsdCents }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' })
   const [reason, setReason] = useState('')
+  const [amount, setAmount] = useState(
+    defaultAmountUsdCents != null ? (defaultAmountUsdCents / 100).toFixed(2) : '',
+  )
 
   if (state.kind === 'done') {
     return (
@@ -25,7 +34,25 @@ export default function RefundButton({ paymentId }: { paymentId: string }) {
 
   if (state.kind === 'confirming') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 180 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
+        <input
+          type="text"
+          placeholder="환불 금액 (USDC)"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          style={{
+            padding: '6px 8px',
+            fontSize: 11,
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            color: '#E8E8F4',
+            outline: 'none',
+          }}
+        />
+        <span style={{ color: '#5A6080', fontSize: 10, lineHeight: 1.4 }}>
+          실제 잔액이 결제액보다 살짝 적을 수 있어요 (네트워크 spread). 안 되면 0.01 ~ 0.02 빼고 재시도.
+        </span>
         <input
           type="text"
           placeholder="사유 (선택)"
@@ -49,7 +76,11 @@ export default function RefundButton({ paymentId }: { paymentId: string }) {
                 const res = await fetch('/api/admin/refund', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ paymentId, reason: reason || undefined }),
+                  body: JSON.stringify({
+                    paymentId,
+                    reason: reason || undefined,
+                    amount: amount || undefined,
+                  }),
                 })
                 const body = await res.json().catch(() => ({}))
                 if (!res.ok) {

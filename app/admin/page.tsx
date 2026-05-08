@@ -207,7 +207,7 @@ export default async function AdminPage() {
                       </td>
                       <td style={tdStyle}>
                         {isCoinbaseConfirmed ? (
-                          <RefundButton paymentId={p.id} />
+                          <RefundButton paymentId={p.id} defaultAmountUsdCents={p.amount_usd_cents} />
                         ) : (
                           <span style={{ color: '#5A6080', fontSize: 11 }}>—</span>
                         )}
