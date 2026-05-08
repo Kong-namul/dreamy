@@ -1,6 +1,10 @@
 import type React from 'react'
 
-const UPDATED_AT = '2026-04-30'
+const UPDATED_AT = '2026-05-08'
+
+// 운영자가 직접 받는 고객지원 이메일.
+// 실제로 받을 주소로 바꿔주세요 (예: 본인 Gmail, parametacorp 메일, 또는 도메인 메일).
+const SUPPORT_EMAIL = 'support@dreamy.app'
 
 const sectionStyle: React.CSSProperties = {
   display: 'flex',
@@ -94,8 +98,23 @@ export default function LegalPage() {
             <li>Dreamy의 일부 기능은 크레딧을 사용합니다. 예: 기본 해석, 그림일기 생성.</li>
             <li>크레딧은 결제, 보너스, 운영상 보정 등을 통해 지급될 수 있습니다.</li>
             <li>AI 생성 또는 저장이 실패한 경우, 시스템은 가능한 범위에서 차감된 크레딧을 자동 복구합니다.</li>
-            <li>결제 수단별 환불 가능 여부와 처리 기간은 Stripe, Coinbase, BitPay, Binance 등 결제 제공자의 정책에 영향을 받을 수 있습니다.</li>
+            <li>결제 수단별 환불 가능 여부와 처리 기간은 Stripe, Coinbase 등 결제 제공자의 정책에 영향을 받을 수 있습니다.</li>
             <li>테스트 모드 결제는 실제 구매가 아니며, 운영 검증 목적으로만 사용됩니다.</li>
+          </ul>
+          <p style={{ ...paragraphStyle, marginTop: 6 }}>
+            <strong style={{ color: '#E8E8F4' }}>환불 정책 요약</strong>
+          </p>
+          <ul style={listStyle}>
+            <li><strong style={{ color: '#E8E8F4' }}>요청 기한</strong>: 결제 후 7일 이내.</li>
+            <li><strong style={{ color: '#E8E8F4' }}>환불 가능 범위</strong>: 미사용 크레딧 한도 내. 이미 해석/그림일기 생성에 소비된 크레딧은 환불되지 않습니다.</li>
+            <li><strong style={{ color: '#E8E8F4' }}>처리 기간</strong>: 영업일 기준 1~3일. 크립토 결제는 블록체인 컨펌 시간이 추가될 수 있습니다.</li>
+            <li><strong style={{ color: '#E8E8F4' }}>네트워크 수수료</strong>: 크립토 결제(Coinbase 등)의 경우 결제 처리 수수료(약 1%)는 환불되지 않습니다. 실제 환불 금액은 결제 시 발생한 수수료를 제외한 금액입니다.</li>
+            <li><strong style={{ color: '#E8E8F4' }}>요청 방법</strong>:{' '}
+              <a href={`mailto:${SUPPORT_EMAIL}?subject=Dreamy 환불 요청`} style={{ color: '#9D96F0', textDecoration: 'underline' }}>
+                {SUPPORT_EMAIL}
+              </a>
+              {' '}으로 결제 일시·금액·사유를 적어 보내주세요.
+            </li>
           </ul>
         </Section>
 
@@ -133,7 +152,25 @@ export default function LegalPage() {
 
         <Section title="9. 문의">
           <p style={paragraphStyle}>
-            서비스 이용, 결제, 개인정보, 탈퇴와 관련한 문의는 운영자가 안내하는 공식 문의 채널을 통해 접수할 수 있습니다. 정식 고객지원 이메일이 확정되면 이 페이지에 추가됩니다.
+            서비스 이용, 결제, 환불, 개인정보, 탈퇴와 관련한 문의는 아래 이메일로 접수해 주세요. 영업일 기준 1~3일 이내에 답변드립니다.
+          </p>
+          <p style={paragraphStyle}>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}`}
+              style={{
+                display: 'inline-block',
+                padding: '8px 14px',
+                background: 'rgba(127,119,221,0.14)',
+                border: '1px solid rgba(127,119,221,0.3)',
+                borderRadius: 8,
+                color: '#9D96F0',
+                fontWeight: 700,
+                textDecoration: 'none',
+                letterSpacing: 0.2,
+              }}
+            >
+              ✉️ {SUPPORT_EMAIL}
+            </a>
           </p>
         </Section>
 
