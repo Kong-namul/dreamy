@@ -2,9 +2,8 @@ import type React from 'react'
 
 const UPDATED_AT = '2026-05-08'
 
-// 운영자가 직접 받는 고객지원 이메일.
-// 실제로 받을 주소로 바꿔주세요 (예: 본인 Gmail, parametacorp 메일, 또는 도메인 메일).
-const SUPPORT_EMAIL = 'support@dreamy.app'
+// 운영자 고객지원 이메일.
+const SUPPORT_EMAIL = 'sangsang0@parametacorp.com'
 
 const sectionStyle: React.CSSProperties = {
   display: 'flex',
