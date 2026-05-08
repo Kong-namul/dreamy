@@ -27,6 +27,7 @@ interface PaymentRow {
   status: string
   provider_payment_id: string | null
   provider_tx_hash: string | null
+  provider_payer_address: string | null
   confirmed_at: string | null
   created_at: string
 }
@@ -98,7 +99,7 @@ export default async function AdminPage() {
   const supa = supabaseServer()
   const { data: rawPayments, error } = await supa
     .from('payments')
-    .select('id, user_id, package_id, method, credits, amount_usd_cents, amount_krw, status, provider_payment_id, provider_tx_hash, confirmed_at, created_at')
+    .select('id, user_id, package_id, method, credits, amount_usd_cents, amount_krw, status, provider_payment_id, provider_tx_hash, provider_payer_address, confirmed_at, created_at')
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -165,6 +166,7 @@ export default async function AdminPage() {
                   <th style={thStyle}>금액</th>
                   <th style={thStyle}>크레딧</th>
                   <th style={thStyle}>상태</th>
+                  <th style={thStyle}>지갑/Tx</th>
                   <th style={thStyle}>환불</th>
                 </tr>
               </thead>
@@ -204,6 +206,36 @@ export default async function AdminPage() {
                         >
                           {p.status}
                         </span>
+                      </td>
+                      <td style={tdStyle}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 10, fontFamily: 'ui-monospace, monospace' }}>
+                          {p.provider_payer_address ? (
+                            <a
+                              href={`https://basescan.org/address/${p.provider_payer_address}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#9D96F0', textDecoration: 'none' }}
+                              title={p.provider_payer_address}
+                            >
+                              👛 {shortAddr(p.provider_payer_address)}
+                            </a>
+                          ) : (
+                            <span style={{ color: '#5A6080' }}>👛 —</span>
+                          )}
+                          {p.provider_tx_hash ? (
+                            <a
+                              href={`https://basescan.org/tx/${p.provider_tx_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{ color: '#7FE3A0', textDecoration: 'none' }}
+                              title={p.provider_tx_hash}
+                            >
+                              🔗 {shortAddr(p.provider_tx_hash)}
+                            </a>
+                          ) : (
+                            <span style={{ color: '#5A6080' }}>🔗 —</span>
+                          )}
+                        </div>
                       </td>
                       <td style={tdStyle}>
                         {isCoinbaseConfirmed ? (
@@ -247,4 +279,9 @@ function formatDate(iso: string): string {
   const hh = String(d.getHours()).padStart(2, '0')
   const min = String(d.getMinutes()).padStart(2, '0')
   return `${yyyy}-${mm}-${dd} ${hh}:${min}`
+}
+
+function shortAddr(addr: string): string {
+  if (addr.length <= 12) return addr
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }

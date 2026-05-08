@@ -96,6 +96,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'signature mismatch' }, { status: 401 })
   }
 
+  // Coinbase webhook 의 payload 구조는 변경 잦음. 가능한 후보 다 훑기.
+  type Payment = { address?: string; payerAddress?: string; from?: string; senderAddress?: string }
   let event: {
     eventType?: string
     type?: string
@@ -103,6 +105,10 @@ export async function POST(req: Request) {
     metadata?: { paymentId?: string; userId?: string }
     transactionHash?: string
     status?: string
+    payments?: Payment[]
+    payment?: Payment
+    address?: string
+    payerAddress?: string
   } = {}
   try { event = JSON.parse(rawBody) } catch {
     return NextResponse.json({ error: 'bad json' }, { status: 400 })
@@ -114,6 +120,20 @@ export async function POST(req: Request) {
   const eventType = event.eventType ?? event.type
   const checkoutId = checkout.id
   const paymentId = checkout.metadata?.paymentId
+
+  // payer 주소: Coinbase 가 어디 넣어두는지 문서상 모호 — 흔한 자리 다 시도.
+  const payerAddress: string | null =
+    checkout.payerAddress ??
+    checkout.address ??
+    checkout.payment?.address ??
+    checkout.payment?.payerAddress ??
+    checkout.payment?.from ??
+    checkout.payment?.senderAddress ??
+    checkout.payments?.[0]?.address ??
+    checkout.payments?.[0]?.payerAddress ??
+    checkout.payments?.[0]?.from ??
+    checkout.payments?.[0]?.senderAddress ??
+    null
 
   // 우리가 관심 있는 두 이벤트만 처리. 그 외는 그냥 OK 로 무시.
   const isPayment = eventType === 'checkout.payment.success'
@@ -138,6 +158,15 @@ export async function POST(req: Request) {
 
   if (!payment) {
     return NextResponse.json({ error: 'payment not found' }, { status: 404 })
+  }
+
+  // payer 주소 캡쳐 (있으면 한 번만 — 옛 결제 backfill 도 가능).
+  if (payerAddress) {
+    await supa
+      .from('payments')
+      .update({ provider_payer_address: payerAddress })
+      .eq('id', paymentId)
+      .is('provider_payer_address', null)
   }
 
   if (isRefund) {
