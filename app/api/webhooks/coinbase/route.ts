@@ -3,13 +3,18 @@
  *
  * Coinbase Business Checkouts webhook (Hook0 표준 서명).
  *
+ * 처리하는 이벤트:
+ *  - checkout.payment.success → 크레딧 적립 (confirm_payment_by_provider RPC)
+ *  - checkout.refund.success  → 크레딧 차감 (revoke_credits_by_provider RPC)
+ *  - 그 외는 무시 (200 OK 로 ignored)
+ *
  * 옛 Commerce 와 차이:
  *  - 헤더: X-CC-Webhook-Signature → X-Hook0-Signature
  *  - 서명 대상: rawBody → `${timestamp}.${headerNames}.${headerValues}.${rawBody}`
  *  - 5분 replay 윈도우
- *  - 이벤트: charge:confirmed → checkout.payment.success
+ *  - 이벤트 이름: charge:confirmed → checkout.payment.success
  *
- * 멱등성: payments(method, provider_payment_id) unique + RPC row lock.
+ * 멱등성: payments(method, provider_payment_id) unique + 두 RPC 모두 row lock + status guard.
  *
  * ref: https://docs.cdp.coinbase.com/coinbase-business/checkout-apis/webhooks
  */
@@ -110,7 +115,11 @@ export async function POST(req: Request) {
   const checkoutId = checkout.id
   const paymentId = checkout.metadata?.paymentId
 
-  if (eventType !== 'checkout.payment.success') {
+  // 우리가 관심 있는 두 이벤트만 처리. 그 외는 그냥 OK 로 무시.
+  const isPayment = eventType === 'checkout.payment.success'
+  const isRefund = eventType === 'checkout.refund.success'
+
+  if (!isPayment && !isRefund) {
     return NextResponse.json({ ok: true, ignored: eventType ?? 'unknown' })
   }
 
@@ -131,6 +140,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'payment not found' }, { status: 404 })
   }
 
+  if (isRefund) {
+    const { data: credits, error: rpcErr } = await supa.rpc('revoke_credits_by_provider', {
+      p_method: 'coinbase_commerce',
+      p_provider_payment_id: checkoutId,
+      p_label: '크레딧 환불 · Coinbase',
+    })
+
+    if (rpcErr) return NextResponse.json({ error: rpcErr.message }, { status: 500 })
+    if (typeof credits !== 'number') return NextResponse.json({ error: 'rpc error' }, { status: 500 })
+    if (credits < 0) return NextResponse.json({ error: 'payment row not found' }, { status: 404 })
+
+    return NextResponse.json({ ok: true, refunded: true, credits })
+  }
+
+  // 결제 성공 분기.
   const txHash = checkout.transactionHash ?? null
 
   const { data: credits, error: rpcErr } = await supa.rpc('confirm_payment_by_provider', {
